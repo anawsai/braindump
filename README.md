@@ -45,7 +45,7 @@ npx expo start
 
 ## Backend Setup
 ```bash
-cd backend/flask
+cd backend
 python -m venv .venv
 # mac/linux:
 source .venv/bin/activate
