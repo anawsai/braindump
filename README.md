@@ -1,6 +1,6 @@
 # BrainDump
 
-A mobile note-taking app built with React Native (Expo) and a lightweight Flask backend connected to Supabase.  
+A mobile note-taking app to help clear your thoughts!
 
 # Tech Stack
 
