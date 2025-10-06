@@ -17,7 +17,7 @@ A mobile note-taking app to help clear your thoughts!
 ### Frontend (`frontend/.env.example`)
 Safe to share, these are public keys.
 
-### Backend (`backend/flask/.env.example`)
+### Backend (`backend/.env.example`)
 Keep the service role key private (never commit the real `.env`)!!!!!
 
 ## Prerequisites
