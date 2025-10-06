@@ -20,7 +20,7 @@ Safe to share, these are public keys.
 ### Backend (`backend/flask/.env.example`)
 Keep the service role key private (never commit the real `.env`)!!!!!
 
-### Prerequisites
+## Prerequisites
 
 Make sure you have installed on your computer:
 
