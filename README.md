@@ -20,6 +20,13 @@ Safe to share, these are public keys.
 ### Backend (`backend/flask/.env.example`)
 Keep the service role key private (never commit the real `.env`)!!!!!
 
+### Prerequisites
+
+Make sure you have installed on your computer:
+
+- Node.js: https://nodejs.org/en
+- Python: https://www.python.org/
+
 ## Local Setup Guide
 
 ### 1. Clone the Repository
