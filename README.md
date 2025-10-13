@@ -43,6 +43,15 @@ npm install
 npx expo start
 ```
 
+## Supabase Setup
+```bash
+cd frontend
+npx expo install @supabase/supabase-js @react-native-async-storage/async-storage
+npx supabase login
+npx supabase link --project-ref ekbtuwvsiuvahcdcxtqc
+npx supabase db pull
+```
+
 ## Backend Setup
 ```bash
 cd backend
