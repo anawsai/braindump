@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {View, Text, TextInput, Button, FlatList, ActivityIndicator } from "react-native";
-import { fetchNotes, addNote } from "./../lib/api";
+import { fetchNotes, addNote } from "../../lib/api";
 
 type Note = { id?: string; title?: string; content?: string };
 
