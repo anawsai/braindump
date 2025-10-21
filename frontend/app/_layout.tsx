@@ -9,7 +9,7 @@ export default function RootLayout() {
     //check auth when the app loads
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        router.replace('/notes');
+        router.replace('/home');
       } else {
         router.replace('/auth');
       }
@@ -18,7 +18,7 @@ export default function RootLayout() {
     //check for sign-in / sign-out 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        router.replace('/notes');
+        router.replace('/home');
       } else {
         router.replace('/auth');
       }
