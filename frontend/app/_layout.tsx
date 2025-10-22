@@ -2,7 +2,6 @@ import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { View, Text, Pressable, Alert, StyleSheet } from 'react-native';
-import { hide } from 'expo-router/build/utils/splash';
 
 function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void> }) {
   return (
@@ -11,8 +10,8 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
       <Pressable style={styles.link} onPress={() => onNavigate('/home')}>
         <Text style={styles.linkText}>{collapsed ? 'H' : 'Home'}</Text>
       </Pressable>
-      <Pressable style={styles.link} onPress={() => onNavigate('/notes')}>
-        <Text style={styles.linkText}>{collapsed ? 'N' : 'Notes'}</Text>
+      <Pressable style={styles.link} onPress={() => onNavigate('/dump')}>
+        <Text style={styles.linkText}>{collapsed ? 'N' : 'Dump'}</Text>
       </Pressable>
 
       <View style={{ flex: 1 }} />
