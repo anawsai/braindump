@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {View, Text, TextInput, Button, FlatList, ActivityIndicator } from "react-native";
-import { fetchNotes, addNote } from "./../lib/api";
+import { fetchNotes, addNote } from "../../lib/api";
 
 type Note = { id?: string; title?: string; content?: string };
 
-export default function Note() {
+export default function Dump() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
