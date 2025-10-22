@@ -8,10 +8,13 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
     <View style={[styles.sidebar, collapsed ? styles.sidebarCollapsed : null]}>
       <Text>BrainDump</Text>
       <Pressable style={styles.link} onPress={() => onNavigate('/home')}>
-        <Text style={styles.linkText}>{collapsed ? 'H' : 'Home'}</Text>
+        <Text style={styles.linkText}>Home</Text>
       </Pressable>
       <Pressable style={styles.link} onPress={() => onNavigate('/dump')}>
-        <Text style={styles.linkText}>{collapsed ? 'N' : 'Dump'}</Text>
+        <Text style={styles.linkText}>Dump</Text>
+      </Pressable>
+      <Pressable style={styles.link} onPress={() => onNavigate('/notes')}>
+        <Text style={styles.linkText}>Notes</Text>
       </Pressable>
 
       <View style={{ flex: 1 }} />

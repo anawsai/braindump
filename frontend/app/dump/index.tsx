@@ -4,7 +4,7 @@ import { fetchNotes, addNote } from "../../lib/api";
 
 type Note = { id?: string; title?: string; content?: string };
 
-export default function MainDump() {
+export default function Dump() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
