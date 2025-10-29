@@ -48,7 +48,7 @@ export default function RootLayout() {
         router.replace('/home');
       } else {
         setShowMenu(false);
-        router.replace('/auth');
+        router.replace('/login');
       }
     });
 
@@ -59,7 +59,7 @@ export default function RootLayout() {
         router.replace('/home');
       } else {
         setShowMenu(false);
-        router.replace('/auth');
+        router.replace('/login');
       }
     });
 
@@ -69,7 +69,7 @@ export default function RootLayout() {
   async function handleSignOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    router.replace('/auth');
+    router.replace('/login');
   }
 
   function handleNavigate(path: string) {
