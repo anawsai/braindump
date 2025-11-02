@@ -9,9 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { supabase } from "../../lib/supabase";
 
 export default function Login() {
   const router = useRouter();
@@ -19,6 +21,25 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+    
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+    
+    if (error) {
+      Alert.alert('Login Failed', error.message);
+    }
+    setLoading(false);
+  }
 
   return (
     <KeyboardAvoidingView
@@ -88,14 +109,17 @@ export default function Login() {
 
         <TouchableOpacity 
           style={styles.loginButton}
-          onPress={() => router.push('/home')}
+          onPress={handleLogin}
+          disabled={loading}
         >
-          <Text style={styles.loginButtonText}>LOGIN</Text>
+          <Text style={styles.loginButtonText}>
+            {loading ? 'Logging in...' : 'LOGIN'}
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.signupContainer}>
           <Text style={styles.signupText}>Don't have an account? </Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/signup')}>
             <Text style={styles.signupLink}>Sign up here!</Text>
           </TouchableOpacity>
         </View>
