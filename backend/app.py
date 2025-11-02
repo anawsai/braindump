@@ -35,25 +35,14 @@ def create_note():
     return jsonify(data.data), 201
 
 
-# get one specific note by ID
 @app.get("/notes/<int:note_id>")
 def get_note_by_id(note_id: int):
-    # TODO: fetch a single note by ID
-    id = request.args.get('id')
-    if not id: 
-        return jsonify({"Success" : False, "error": "Missing user_id"})
-    
     data = supabase.table("notes").select("*").eq("id", note_id).single().execute()
-    return jsonify({"success": True, "notes": data.data})
-
-    # Use supabase.table("notes").select("*").eq("id", note_id).single().execute()
-    #return jsonify({"message": f"TODO: return note with id {note_id}"})
+    return jsonify(data.data)
 
 # update a note by ID
 @app.put("/notes/<int:note_id>")
 def update_note(note_id: int):
-    # TODO: update an existing note in Supabase
-    
     data = request.get_json()
     title = data.get("title")
     content = data.get("content")
@@ -65,23 +54,19 @@ def update_note(note_id: int):
         updates["content"] = content
 
     response = supabase.table("notes").update(updates).eq("id", note_id).execute()
-
     
-    return jsonify({"message": f"TODO: update note with id {note_id}"})
+    if not response.data:
+        return jsonify({"error": "Note not found"}), 404
+    
+    return jsonify(response.data[0])
 
     
 # delete a note by ID
 @app.delete("/notes/<int:note_id>")
 def delete_note(note_id: int):
-    # TODO: delete a note from Supabase
     data = supabase.table("notes").delete().eq("id", note_id).execute()
 
     if not data.data:
-        return jsonify({"error": "Not not found."})
+        return jsonify({"error": "Note not found"}), 404
     
-    return jsonify({"message": f"TODO: delete note with id {note_id}"})
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5001"))
-    app.run(host="0.0.0.0", port=port, debug=True)
-
+    return jsonify({"success": True, "message": f"Note {note_id} deleted"})

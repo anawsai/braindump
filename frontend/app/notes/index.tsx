@@ -33,9 +33,7 @@ export default function Notes() {
 
       {/* Header with menu and avatar */}
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="menu" size={28} color="black" />
-        </TouchableOpacity>
+        <View style={{ width: 28 }} />  {/* Empty space for layout balance */}
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>Y</Text>
         </View>
