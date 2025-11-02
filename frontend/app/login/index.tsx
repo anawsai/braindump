@@ -10,6 +10,7 @@ import {
   Platform,
   StatusBar,
   Alert,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -48,10 +49,13 @@ export default function Login() {
     >
       <StatusBar barStyle="dark-content" />
 
-      {/* Top section with brain */}
+      {/* Top section with mascot */}
       <View style={styles.topSection}>
         <View style={styles.brainContainer}>
-          <Text style={styles.brainEmoji}>🧠</Text>
+          <Image 
+            source={require('../../assets/mascot.png')} 
+            style={styles.mascotImage}
+          />
         </View>
       </View>
 
@@ -147,8 +151,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  brainEmoji: {
-    fontSize: 70,
+  mascotImage: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
   },
   formSection: {
     flex: 0.65,

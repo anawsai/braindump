@@ -1,17 +1,3 @@
-// notes page here
-//Add details and stuff in other files in this folder
-
-// import { View, Text } from 'react-native';
-
-// export default function Notes() {
-//   return (
-//     <View style={{ flex:1, justifyContent:'center', alignItems:'center', backgroundColor:'#fafafa' }}>
-//       <Text style={{ fontSize:32, fontWeight:'700' }}>Notes</Text>
-//       <Text style={{ color:'#666', marginTop:8 }}>Notes page coming soon</Text>
-//     </View>
-//   );
-// }
-
 // Notes page - view all saved notes
 import React, { useState } from "react";
 import {
@@ -21,8 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  Image,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 export default function Notes() {
   const [noteText, setNoteText] = useState("");
@@ -31,7 +17,7 @@ export default function Notes() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header with menu and avatar */}
+      {/* Header with avatar */}
       <View style={styles.header}>
         <View style={{ width: 28 }} />  {/* Empty space for layout balance */}
         <View style={styles.avatar}>
@@ -39,9 +25,12 @@ export default function Notes() {
         </View>
       </View>
 
-      {/* Brain prompt */}
+      {/* Mascot prompt */}
       <View style={styles.promptContainer}>
-        <Text style={styles.brainEmoji}>🧠</Text>
+        <Image 
+          source={require('../../assets/mascot.png')} 
+          style={styles.mascotImage}
+        />
         <Text style={styles.promptText}>What makes you feel overwhelmed?</Text>
       </View>
 
@@ -99,8 +88,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 24,
   },
-  brainEmoji: {
-    fontSize: 50,
+  mascotImage: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
     marginBottom: 12,
   },
   promptText: {
