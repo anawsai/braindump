@@ -1,4 +1,4 @@
-// Notes page - view all saved notes
+// Dump page (rename it later)
 import React, { useState } from "react";
 import {
   View,
@@ -8,10 +8,39 @@ import {
   StyleSheet,
   StatusBar,
   Image,
+  Alert,
 } from "react-native";
+import { addNote } from "../../lib/api";
 
 export default function Notes() {
   const [noteText, setNoteText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function saveNote() {
+    if (!noteText.trim()) {
+      Alert.alert('Error', 'Please write something before saving');
+      return;
+    }
+    try {
+      setSaving(true);
+      console.log("POST /notes via Flask");
+      const row = await addNote('Untitled', noteText); // (title, content)
+      console.log("Saved row:", row);
+      Alert.alert('Success', 'Note saved!');
+      setNoteText('');
+    } catch (e:any) {
+      console.error("Save failed:", e);
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+  
+  async function saveAndOrganize() {
+    //for now, just save normally
+    //categorization logic later
+    await saveNote();
+  }
 
   return (
     <View style={styles.container}>
@@ -19,7 +48,7 @@ export default function Notes() {
 
       {/* Header with avatar */}
       <View style={styles.header}>
-        <View style={{ width: 28 }} />  {/* Empty space for layout balance */}
+        <View style={{ width: 28 }} />
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>Y</Text>
         </View>
@@ -48,11 +77,23 @@ export default function Notes() {
 
       {/* Buttons */}
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Save</Text>
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={saveNote}
+          disabled={saving}
+        >
+          <Text style={styles.buttonText}>
+            {saving ? 'Saving...' : 'Save'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Save & Organize</Text>
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={saveAndOrganize}
+          disabled={saving}
+        >
+          <Text style={styles.buttonText}>
+            {saving ? 'Saving...' : 'Save & Organize'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
