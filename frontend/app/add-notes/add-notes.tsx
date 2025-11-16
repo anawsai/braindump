@@ -6,20 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  Modal,
-  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 
-const CATEGORIES = ["Health", "Work", "Personal", "Ideas", "Tasks", "Learning"];
-
-export default function EditNote() {
+export default function AddNote() {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState("Brainstorm");
+  const [content, setContent] = useState("What if we implemented yadayada.....");
   const [category, setCategory] = useState("Health");
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -28,7 +22,7 @@ export default function EditNote() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color="#000000" />
+          <Text style={styles.closeIcon}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Note</Text>
         <TouchableOpacity>
@@ -39,22 +33,17 @@ export default function EditNote() {
       {/* Title Section */}
       <View style={styles.section}>
         <Text style={styles.label}>Title</Text>
-                  <View style={styles.titleContainer}>
-            <TextInput
-              style={styles.titleInput}
-              placeholder="Title"
-              placeholderTextColor="#999999"
-              value={title}
-              onChangeText={setTitle}
-            />
-            <TouchableOpacity
-              style={styles.categoryBadge}
-              onPress={() => setShowCategoryPicker(true)}
-            >
-              <Ionicons name="star" size={14} color="#000000" style={{ marginRight: 4 }} />
-              <Text style={styles.categoryText}>{category}</Text>
-            </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          <TextInput
+            style={styles.titleInput}
+            value={title}
+            onChangeText={setTitle}
+          />
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryIcon}>⭐</Text>
+            <Text style={styles.categoryText}>{category}</Text>
           </View>
+        </View>
       </View>
 
       {/* Content Section */}
@@ -62,8 +51,6 @@ export default function EditNote() {
         <Text style={styles.label}>Content</Text>
         <TextInput
           style={styles.contentInput}
-          placeholder="What's the plan for today...."
-          placeholderTextColor="#999999"
           value={content}
           onChangeText={setContent}
           multiline
@@ -81,47 +68,12 @@ export default function EditNote() {
             <Text style={styles.buttonText}>Organize</Text>
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Category Picker Modal */}
-      <Modal
-        visible={showCategoryPicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCategoryPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
-              <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                <Ionicons name="close" size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={CATEGORIES}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.categoryItem,
-                    category === item && styles.categoryItemSelected,
-                  ]}
-                  onPress={() => {
-                    setCategory(item);
-                    setShowCategoryPicker(false);
-                  }}
-                >
-                  <Text style={styles.categoryItemText}>{item}</Text>
-                  {category === item && (
-                    <Ionicons name="checkmark" size={20} color="#FFB052" />
-                  )}
-                </TouchableOpacity>
-              )}
-            />
-          </View>
+        {/* Brain mascot */}
+        <View style={styles.mascotContainer}>
+          <Text style={styles.mascot}>🧠</Text>
         </View>
-      </Modal>
+      </View>
     </View>
   );
 }
@@ -255,48 +207,5 @@ const styles = StyleSheet.create({
   },
   mascot: {
     fontSize: 40,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 16,
-    maxHeight: "70%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000000",
-  },
-  categoryItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  categoryItemSelected: {
-    backgroundColor: "#FFF5E6",
-  },
-  categoryItemText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#000000",
   },
 });
