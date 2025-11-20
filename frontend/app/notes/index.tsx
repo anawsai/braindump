@@ -3,15 +3,79 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  Pressable,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchNotes, addNote } from "../../lib/api";
+
+function NoteCard({ item, openMenuId, setOpenMenuId }: any) {
+  const router = useRouter();
+
+  // Hover states
+  const [editHover, setEditHover] = useState(false);
+  const [deleteHover, setDeleteHover] = useState(false);
+
+  const isOpen = openMenuId === item.id;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.circleCheckbox} />
+        <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
+
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setOpenMenuId(isOpen ? null : item.id)}
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color="#333" />
+        </TouchableOpacity>
+
+        {isOpen && (
+          <View style={styles.dropdown}>
+            {/* EDIT */}
+            <Pressable
+              style={({ hovered }) => [styles.dropdownItem, hovered && styles.dropdownItemHover]}
+              onPress={() => {
+                setOpenMenuId(null);
+                router.push(`/edit-notes/edit?id=${item.id}`);
+              }}
+            >
+              {({ hovered }) => (
+                <Text style={[styles.dropdownText, hovered && styles.dropdownTextHover]}>Edit</Text>
+              )}
+            </Pressable>
+
+            {/* DELETE */}
+            <Pressable
+              style={({ hovered }) => [styles.dropdownItem, hovered && styles.dropdownItemHover]}
+              onPress={() => {
+                setOpenMenuId(null);
+                router.push(`/delete-note/delete?id=${item.id}`);
+              }}
+            >
+              {({ hovered }) => (
+                <Text style={[styles.dropdownText, hovered && styles.dropdownTextHover]}>Delete</Text>
+              )}
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardContent}>{item.content}</Text>
+      </View>
+
+      <View style={styles.cardFooter}>
+        <Text style={styles.timestamp}>5 mins ago</Text>
+      </View>
+    </View>
+  );
+}
 
 type Note = { id?: string; title?: string; content?: string };
 
@@ -22,6 +86,7 @@ export default function Dump() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [query, setQuery] = useState("");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -102,29 +167,17 @@ export default function Dump() {
           contentContainerStyle={{ paddingBottom: 24 }}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.circleCheckbox} />
-                <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
-                <TouchableOpacity style={styles.menuButton}>
-                  <Ionicons name="ellipsis-vertical" size={18} color="#333" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.cardBody}>
-                <Text style={styles.cardContent}>{item.content}</Text>
-              </View>
-
-              <View style={styles.cardFooter}>
-                <Text style={styles.timestamp}>5 mins ago</Text>
-              </View>
-            </View>
+            <NoteCard
+              item={item}
+              openMenuId={openMenuId}
+              setOpenMenuId={setOpenMenuId}
+            />
           )}
         />
       )}
-    </View>
+    </View>  
   );
-}
+}           
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
@@ -197,4 +250,38 @@ const styles = StyleSheet.create({
   footerLeft: { flexDirection: "row", alignItems: "center" },
   footerText: { fontSize: 12, color: "#111", marginLeft: 4 },
   timestamp: { fontSize: 12, color: "#777" },
+
+  dropdown: {
+  position: "absolute",
+  top: 30,
+  right: 0,
+  backgroundColor: "#FFB052",
+  borderWidth: 1,
+  borderColor: "#C9731E",
+  borderRadius: 10,
+  overflow: "hidden",
+  zIndex: 50,
+  alignItems: "stretch",
+},
+
+dropdownItem: {
+  width: 200,
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderBottomWidth: 1,
+  borderBottomColor: "#C9731E",
+  justifyContent: "center",
+  alignItems: "stretch", 
+},
+
+dropdownItemHover: {
+    backgroundColor: "#ffffff",
+  },
+
+  dropdownText: {
+    color: "#2b1a0d",
+    width: "100%",
+    textAlign: "left",
+    paddingVertical: 0,
+  },
 });
