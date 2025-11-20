@@ -253,9 +253,9 @@ export default function Dump() {
           )}
         />
       )}
-    </View>
+    </View>  
   );
-}
+}           
 
 const styles = StyleSheet.create({
   container: {
@@ -348,6 +348,40 @@ const styles = StyleSheet.create({
     marginTop: 60,
   },
   timestamp: { fontSize: 12, color: "#777" },
+
+  dropdown: {
+  position: "absolute",
+  top: 30,
+  right: 0,
+  backgroundColor: "#FFB052",
+  borderWidth: 1,
+  borderColor: "#C9731E",
+  borderRadius: 10,
+  overflow: "hidden",
+  zIndex: 50,
+  alignItems: "stretch",
+},
+
+dropdownItem: {
+  width: 200,
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderBottomWidth: 1,
+  borderBottomColor: "#C9731E",
+  justifyContent: "center",
+  alignItems: "stretch", 
+},
+
+dropdownItemHover: {
+    backgroundColor: "#ffffff",
+  },
+
+  dropdownText: {
+    color: "#2b1a0d",
+    width: "100%",
+    textAlign: "left",
+    paddingVertical: 0,
+  },
 });
 
 

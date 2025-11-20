@@ -95,7 +95,7 @@ def update_note(note_id: str):
 @app.delete("/notes/<note_id>")
 def delete_note(note_id: str):
     try:
-        res = supabase.table("notes").delete(returning="representation").eq("id", note_id).execute()
+        res = supabase.table("notes").delete().eq("id", note_id).execute()
         if not res.data:
             return jsonify({"error": "Note not found"}), 404
         return jsonify({"success": True, "message": f"Note {note_id} deleted"}), 200
