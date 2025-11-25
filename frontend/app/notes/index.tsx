@@ -1,174 +1,200 @@
-// Dump page (rename it later)
-import React, { useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
   TextInput,
+  Button,
+  FlatList,
+  ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
-  StatusBar,
-  Image,
-  Alert,
 } from "react-native";
-import { addNote } from "../../lib/api";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { fetchNotes, addNote } from "../../lib/api";
 
-export default function Notes() {
-  const [noteText, setNoteText] = useState("");
-  const [saving, setSaving] = useState(false);
+type Note = { id?: string; title?: string; content?: string };
 
-  async function saveNote() {
-    if (!noteText.trim()) {
-      Alert.alert('Error', 'Please write something before saving');
-      return;
-    }
+export default function Dump() {
+  const router = useRouter();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [query, setQuery] = useState("");
+
+  async function load() {
+    setLoading(true);
     try {
-      setSaving(true);
-      console.log("POST /notes via Flask");
-      const row = await addNote('Untitled', noteText); // (title, content)
-      console.log("Saved row:", row);
-      Alert.alert('Success', 'Note saved!');
-      setNoteText('');
-    } catch (e:any) {
-      console.error("Save failed:", e);
-      Alert.alert('Error', e.message);
+      const data = await fetchNotes();
+      setNotes(data ?? []);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   }
-  
-  async function saveAndOrganize() {
-    //for now, just save normally
-    //categorization logic later
-    await saveNote();
+
+  async function onAdd() {
+    if (!title && !content) return;
+    await addNote(title || "Untitled", content || "");
+    setTitle("");
+    setContent("");
+    await load();
   }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return notes;
+    return notes.filter(
+      (n) =>
+        (n.title || "").toLowerCase().includes(q) ||
+        (n.content || "").toLowerCase().includes(q)
+    );
+  }, [notes, query]);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <Text style={styles.heading}>Notes</Text>
 
-      {/* Header with avatar */}
-      <View style={styles.header}>
-        <View style={{ width: 28 }} />
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>Y</Text>
+      {/* Search bar with icons */}
+      <View style={styles.searchRow}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          placeholder="Search your thoughts..."
+          value={query}
+          onChangeText={setQuery}
+          style={styles.searchInput}
+          returnKeyType="search"
+        />
+        <TouchableOpacity onPress={() => { /* placeholder for mic action */ }}>
+          <Ionicons name="mic" size={20} color="#666" style={styles.micIcon} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Controls: Add button + filter chips */}
+      <View style={styles.controlsRow}>
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push("/edit-notes/edit")}>
+          <Text style={styles.addButtonText}>＋ Add Note</Text>
+        </TouchableOpacity>
+
+        <View style={styles.chipsRow}>
+          <TouchableOpacity style={[styles.chip, styles.chipActive]}>
+            <Text style={styles.chipText}>all (4)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.chip}>
+            <Text style={styles.chipText}>today (3)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.chip}>
+            <Text style={styles.chipText}>upcoming (1)</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Mascot prompt */}
-      <View style={styles.promptContainer}>
-        <Image 
-          source={require('../../assets/mascot.png')} 
-          style={styles.mascotImage}
-        />
-        <Text style={styles.promptText}>What makes you feel overwhelmed?</Text>
-      </View>
+      {loading ? (
+        <ActivityIndicator />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item, i) => item.id ?? String(i)}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.circleCheckbox} />
+                <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
+                <TouchableOpacity style={styles.menuButton}>
+                  <Ionicons name="ellipsis-vertical" size={18} color="#333" />
+                </TouchableOpacity>
+              </View>
 
-      {/* Text input area */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="What's on your mind? Ideas, tasks, random thoughts, anything...."
-          placeholderTextColor="#999"
-          multiline
-          value={noteText}
-          onChangeText={setNoteText}
-          style={styles.textInput}
-        />
-      </View>
+              <View style={styles.cardBody}>
+                <Text style={styles.cardContent}>{item.content}</Text>
+              </View>
 
-      {/* Buttons */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={saveNote}
-          disabled={saving}
-        >
-          <Text style={styles.buttonText}>
-            {saving ? 'Saving...' : 'Save'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={saveAndOrganize}
-          disabled={saving}
-        >
-          <Text style={styles.buttonText}>
-            {saving ? 'Saving...' : 'Save & Organize'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+              <View style={styles.cardFooter}>
+                <Text style={styles.timestamp}>5 mins ago</Text>
+              </View>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "white",
-    padding: 16,
-  },
-  header: {
+  container: { flex: 1, padding: 16 },
+  heading: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
+  searchRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFB052",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  promptContainer: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  mascotImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     marginBottom: 12,
   },
-  promptText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "black",
-  },
-  inputContainer: {
-    flex: 1,
+  searchIcon: { marginRight: 8 },
+  micIcon: { marginLeft: 8 },
+  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  addSection: { marginBottom: 12 },
+  input: {
     borderWidth: 1,
-    borderColor: "#999",
+    borderColor: "#ccc",
     borderRadius: 8,
-    padding: 16,
-    backgroundColor: "#F5F5F5",
-    marginBottom: 24,
+    padding: 10,
+    marginBottom: 8,
   },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-    textAlignVertical: "top",
+  multiline: { minHeight: 60 },
+  card: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#7A4C2B",
+    borderRadius: 10,
+    backgroundColor: "#f6f3f0",
   },
-  buttonRow: {
-    flexDirection: "row",
-    gap: 12,
+  cardTitle: { fontWeight: "700", marginBottom: 6 },
+  cardContent: { color: "#333" },
+  /* new styles */
+  controlsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  addButton: {
+    backgroundColor: "#FFB052",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#C9731E",
   },
-  button: {
-    flex: 1,
-    backgroundColor: "#D3D3D3",
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
+  addButtonText: { color: "#2b1a0d", fontWeight: "600" },
+  chipsRow: { flexDirection: "row", gap: 8 },
+  chip: {
+    backgroundColor: "#FFDAB3",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#C9731E",
   },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "black",
+  chipActive: { backgroundColor: "#FFB052" },
+  chipText: { color: "#2b1a0d", fontWeight: "600" },
+  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  circleCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#2b1a0d",
+    marginRight: 12,
   },
+  menuButton: { marginLeft: 'auto', padding: 6 },
+  cardBody: { minHeight: 80 },
+  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
+  footerLeft: { flexDirection: "row", alignItems: "center" },
+  footerText: { fontSize: 12, color: "#111", marginLeft: 4 },
+  timestamp: { fontSize: 12, color: "#777" },
 });

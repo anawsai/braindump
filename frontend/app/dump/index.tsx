@@ -1,96 +1,174 @@
-import React, { useEffect, useState } from "react";
-import {View, Text, TextInput, Button, FlatList, ActivityIndicator } from "react-native";
-import { fetchNotes, addNote } from "../../lib/api";
+// Dump page (rename it later)
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Image,
+  Alert,
+} from "react-native";
+import { addNote } from "../../lib/api";
 
-type Note = { id?: string; title?: string; content?: string };
+export default function Notes() {
+  const [noteText, setNoteText] = useState("");
+  const [saving, setSaving] = useState(false);
 
-export default function Dump() {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-
-  async function load() {
-    setLoading(true);
+  async function saveNote() {
+    if (!noteText.trim()) {
+      Alert.alert('Error', 'Please write something before saving');
+      return;
+    }
     try {
-      const data = await fetchNotes();
-      setNotes(data ?? []);
+      setSaving(true);
+      console.log("POST /notes via Flask");
+      const row = await addNote('Untitled', noteText); // (title, content)
+      console.log("Saved row:", row);
+      Alert.alert('Success', 'Note saved!');
+      setNoteText('');
+    } catch (e:any) {
+      console.error("Save failed:", e);
+      Alert.alert('Error', e.message);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
-
-  async function onAdd() {
-    if (!title && !content) return;
-    await addNote(title || "Untitled", content || "");
-    setTitle("");
-    setContent("");
-    await load();
+  
+  async function saveAndOrganize() {
+    //for now, just save normally
+    //categorization logic later
+    await saveNote();
   }
 
-  useEffect(() => {
-    load();
-  }, []);
-
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 22, fontWeight: "700", marginBottom: 8 }}>
-        BrainDump — Notes
-      </Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
 
-      <View style={{ marginBottom: 12 }}>
-        <TextInput
-          placeholder="Title"
-          value={title}
-          onChangeText={setTitle}
-          style={{
-            borderWidth: 1,
-            borderColor: "#ccc",
-            borderRadius: 8,
-            padding: 10,
-            marginBottom: 8,
-          }}
-        />
-        <TextInput
-          placeholder="Content"
-          value={content}
-          onChangeText={setContent}
-          style={{
-            borderWidth: 1,
-            borderColor: "#ccc",
-            borderRadius: 8,
-            padding: 10,
-            marginBottom: 8,
-          }}
-          multiline
-        />
-        <Button title="Add Note" onPress={onAdd} />
+      {/* Header with avatar */}
+      <View style={styles.header}>
+        <View style={{ width: 28 }} />
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>Y</Text>
+        </View>
       </View>
 
-      {loading ? (
-        <ActivityIndicator />
-      ) : (
-        <FlatList
-          data={notes}
-          keyExtractor={(item, i) => item.id ?? String(i)}
-          contentContainerStyle={{ gap: 8 }}
-          renderItem={({ item }) => (
-            <View
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: "#eee",
-                borderRadius: 10,
-              }}
-            >
-              <Text style={{ fontWeight: "700" }}>
-                {item.title || "Untitled"}
-              </Text>
-              <Text>{item.content}</Text>
-            </View>
-          )}
+      {/* Mascot prompt */}
+      <View style={styles.promptContainer}>
+        <Image 
+          source={require('../../assets/mascot.png')} 
+          style={styles.mascotImage}
         />
-      )}
+        <Text style={styles.promptText}>What makes you feel overwhelmed?</Text>
+      </View>
+
+      {/* Text input area */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          placeholder="What's on your mind? Ideas, tasks, random thoughts, anything...."
+          placeholderTextColor="#999"
+          multiline
+          value={noteText}
+          onChangeText={setNoteText}
+          style={styles.textInput}
+        />
+      </View>
+
+      {/* Buttons */}
+      <View style={styles.buttonRow}>
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={saveNote}
+          disabled={saving}
+        >
+          <Text style={styles.buttonText}>
+            {saving ? 'Saving...' : 'Save'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={saveAndOrganize}
+          disabled={saving}
+        >
+          <Text style={styles.buttonText}>
+            {saving ? 'Saving...' : 'Save & Organize'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+    padding: 16,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFB052",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  promptContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  mascotImage: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+    marginBottom: 12,
+  },
+  promptText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "black",
+  },
+  inputContainer: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#999",
+    borderRadius: 8,
+    padding: 16,
+    backgroundColor: "#F5F5F5",
+    marginBottom: 24,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+    textAlignVertical: "top",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  button: {
+    flex: 1,
+    backgroundColor: "#D3D3D3",
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "black",
+  },
+});
