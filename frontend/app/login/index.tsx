@@ -29,13 +29,13 @@ export default function Login() {
       Alert.alert('Error', 'Please enter email and password');
       return;
     }
-    
+
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     });
-    
+
     if (error) {
       Alert.alert('Login Failed', error.message);
     }
@@ -52,8 +52,8 @@ export default function Login() {
       {/* Top section with mascot */}
       <View style={styles.topSection}>
         <View style={styles.brainContainer}>
-          <Image 
-            source={require('../../assets/mascot.png')} 
+          <Image
+            source={require('../../assets/mascot.png')}
             style={styles.mascotImage}
           />
         </View>
@@ -83,20 +83,20 @@ export default function Login() {
             autoCapitalize="none"
             placeholderTextColor="#999"
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeButton}
           >
-            <Ionicons 
-              name={showPassword ? "eye-off-outline" : "eye-outline"} 
-              size={22} 
-              color="#666" 
+            <Ionicons
+              name={showPassword ? "eye-off-outline" : "eye-outline"}
+              size={22}
+              color="#666"
             />
           </TouchableOpacity>
         </View>
 
         <View style={styles.optionsRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.checkboxContainer}
             onPress={() => setRememberMe(!rememberMe)}
           >
@@ -105,13 +105,13 @@ export default function Login() {
             </View>
             <Text style={styles.rememberText}>Remember me</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity>
             <Text style={styles.forgotText}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.loginButton}
           onPress={handleLogin}
           disabled={loading}

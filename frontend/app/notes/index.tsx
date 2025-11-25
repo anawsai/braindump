@@ -8,10 +8,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  Alert
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchNotes, addNote } from "../../lib/api";
+import { fetchNotes, addNote, deleteNote } from "../../lib/api";
 
 type Note = { id?: string; title?: string; content?: string };
 
@@ -30,6 +31,16 @@ export default function Dump() {
       setNotes(data ?? []);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(id?: string) {
+    if (!id) return;
+    try {
+      await deleteNote(id);
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to delete note');
     }
   }
 
@@ -55,6 +66,20 @@ export default function Dump() {
     );
   }, [notes, query]);
 
+  const todayNotes = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return notes.filter((n) => {
+      // Assuming notes have a created_at or timestamp field
+      // For now, we'll count all notes as "today" placeholder
+      return true; // Replace with actual date logic when timestamps are available
+    });
+  }, [notes]);
+
+  const allCount = notes.length;
+  const todayCount = todayNotes.length;
+  const upcomingCount = 0; // Placeholder - set when you have scheduled notes
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Notes</Text>
@@ -69,9 +94,6 @@ export default function Dump() {
           style={styles.searchInput}
           returnKeyType="search"
         />
-        <TouchableOpacity onPress={() => { /* placeholder for mic action */ }}>
-          <Ionicons name="mic" size={20} color="#666" style={styles.micIcon} />
-        </TouchableOpacity>
       </View>
 
       {/* Controls: Add button + filter chips */}
@@ -82,13 +104,13 @@ export default function Dump() {
 
         <View style={styles.chipsRow}>
           <TouchableOpacity style={[styles.chip, styles.chipActive]}>
-            <Text style={styles.chipText}>all (4)</Text>
+            <Text style={styles.chipText}>all ({allCount})</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>today (3)</Text>
+            <Text style={styles.chipText}>today ({todayCount})</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>upcoming (1)</Text>
+            <Text style={styles.chipText}>upcoming ({upcomingCount})</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -191,7 +213,7 @@ const styles = StyleSheet.create({
     borderColor: "#2b1a0d",
     marginRight: 12,
   },
-  menuButton: { marginLeft: 'auto', padding: 6 },
+  menuButton: { marginLeft: 'auto', padding: 14, borderRadius: 12},
   cardBody: { minHeight: 80 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
   footerLeft: { flexDirection: "row", alignItems: "center" },
