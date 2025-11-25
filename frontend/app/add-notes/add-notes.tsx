@@ -8,6 +8,7 @@ import {
   StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { addNote } from "../../lib/api";
 
 export default function AddNote() {
   const router = useRouter();
