@@ -13,10 +13,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 app = Flask(__name__)
 CORS(app)
 
-@app.get("/health")
-def health():
-    return jsonify({"ok": True}), 200
-
 @app.get("/notes")
 def get_notes():
     try:
@@ -80,6 +76,10 @@ def delete_note(note_id: str):
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+@app.get("/")
+def home():
+    return jsonify({"message": "Backend is running"}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5001)))

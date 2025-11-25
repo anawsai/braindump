@@ -5,12 +5,12 @@ import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
 
 function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void> }) {
   if (collapsed) return null;
-  
+
   return (
     <View style={styles.sidebar}>
       <View style={styles.mascotSection}>
-        <Image 
-          source={require('../assets/mascot.png')} 
+        <Image
+          source={require('../assets/mascot.png')}
           style={styles.mascotImage}
         />
       </View>
@@ -27,7 +27,7 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
             <Text style={styles.profileEmail}>jeffreyjones@gmail.com</Text>
           </View>
         </View>
-        
+
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Image source={require('../assets/23.png')} style={styles.statIconImage} />
@@ -37,10 +37,6 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
             <Image source={require('../assets/checkmark.png')} style={styles.statIconImage} />
             <Text style={styles.statNumber}>5</Text>
           </View>
-          <View style={styles.stat}>
-            <Image source={require('../assets/person.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>8</Text>
-          </View>
         </View>
       </View>
 
@@ -48,18 +44,14 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
         <Pressable style={styles.navButton} onPress={() => onNavigate('/dump')}>
           <Text style={styles.navButtonText}>Dump</Text>
         </Pressable>
-        
+
         <Pressable style={[styles.navButton, styles.navButtonActive]} onPress={() => onNavigate('/notes')}>
           <Image source={require('../assets/notes.png')} style={styles.navButtonIconImage} />
           <Text style={styles.navButtonText}>Notes</Text>
         </Pressable>
-        
+
         <Pressable style={styles.navButton} onPress={() => onNavigate('/review')}>
           <Text style={styles.navButtonText}>Review</Text>
-        </Pressable>
-        
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/teams')}>
-          <Text style={styles.navButtonText}>Teams</Text>
         </Pressable>
       </View>
 
@@ -69,7 +61,7 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
         <Pressable style={styles.settingsButton} onPress={() => onNavigate('/settings')}>
           <Text style={styles.navButtonText}>Settings</Text>
         </Pressable>
-        
+
         <Pressable style={styles.settingsButton} onPress={() => onNavigate('/help')}>
           <Text style={styles.navButtonText}>Help & Support</Text>
         </Pressable>
@@ -154,15 +146,15 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    backgroundColor: '#ffffff',
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#FFB052',
     padding: 0,
   },
 
-  sidebar: { 
-    width: 320, 
+  sidebar: {
+    width: 320,
     paddingVertical: 12,
     paddingHorizontal: 20,
     backgroundColor: '#FFB052',
@@ -175,7 +167,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 
-  sidebarCollapsed: { 
+  sidebarCollapsed: {
     display: 'none'
   },
 
@@ -197,8 +189,8 @@ const styles = StyleSheet.create({
     marginHorizontal: -20,
     alignSelf: 'stretch',
   },
-  
-  profileSection: { 
+
+  profileSection: {
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
@@ -229,32 +221,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  profileName: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: '#000000', 
+  profileName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
     marginBottom: 6,
   },
 
-  profileEmail: { 
-    fontSize: 13, 
+  profileEmail: {
+    fontSize: 13,
     color: '#000000',
     textDecorationLine: 'underline',
   },
 
-  statsRow: { 
-    flexDirection: 'row', 
+  statsRow: {
+    flexDirection: 'row',
     justifyContent: 'flex-start',
     marginTop: 8,
   },
 
   stat: {
-    flexDirection: 'row', 
+    flexDirection: 'row',
     alignItems: 'center',
     marginRight: 18,
   },
 
-  statIcon: { 
+  statIcon: {
     fontSize: 18,
     marginRight: 6,
   },
@@ -267,8 +259,8 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  statNumber: { 
-    fontSize: 16, 
+  statNumber: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#000000',
   },
@@ -311,7 +303,7 @@ const styles = StyleSheet.create({
   navButtonIconImage: {
     position: 'absolute',
     left: 12,
-    top: 6,             
+    top: 6,
     width: 28,
     height: 28,
     resizeMode: 'contain',
@@ -341,7 +333,7 @@ const styles = StyleSheet.create({
 
   quickActions: {
     paddingHorizontal: 16,
-    paddingTop: 14,         
+    paddingTop: 14,
   },
 
 
@@ -356,7 +348,7 @@ const styles = StyleSheet.create({
     width: '85%',
     marginBottom: 22,
     height: 44,
-    justifyContent: 'center', 
+    justifyContent: 'center',
   },
 
   signOutButton: {
@@ -365,7 +357,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FF8D05',
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#000000',
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -374,32 +366,32 @@ const styles = StyleSheet.create({
   },
 
   signOutIcon: {
-    fontSize: 24,
+    fontSize: 70,
     marginRight: 10,
   },
 
   signOutIconImage: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
+    width: 30,
+    height: 30,
+    marginRight:15,
     resizeMode: 'contain',
   },
 
   signOutText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '550',
     color: '#000000',
   },
 
-  content: { 
-    flex: 1, 
-    backgroundColor: '#ffffff',
+  content: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
     marginLeft: 16,
     padding: 18,
   },
 
-  headerRow: { 
-    height: 52, 
+  headerRow: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -408,7 +400,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e5e5',
   },
 
-  menuButton: { 
-    padding: 8, 
+  menuButton: {
+    padding: 8,
   },
 });

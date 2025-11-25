@@ -8,9 +8,12 @@ import {
   StatusBar,
   Modal,
   FlatList,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { addNote } from "../../lib/api";
 
 const CATEGORIES = ["Health", "Work", "Personal", "Ideas", "Tasks", "Learning"];
 
@@ -20,6 +23,33 @@ export default function EditNote() {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Health");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!title.trim() || !content.trim()) {
+      Alert.alert('Error', 'Please fill in both title and content');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await addNote(title, content);
+      Alert.alert('Success', 'Note saved!');
+      setTitle("");
+      setContent("");
+      setCategory("Health");
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to save note');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleOrganize() {
+    // For now, organize just saves the note
+    await handleSave();
+  }
 
   return (
     <View style={styles.container}>
@@ -31,9 +61,7 @@ export default function EditNote() {
           <Ionicons name="close" size={28} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Note</Text>
-        <TouchableOpacity>
-          <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
+        <View style={{ width: 50 }} />
       </View>
 
       {/* Title Section */}
@@ -74,11 +102,19 @@ export default function EditNote() {
       {/* Bottom Buttons */}
       <View style={styles.bottomSection}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.saveButton}>
-            <Text style={styles.buttonText}>Save</Text>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.organizeButton}>
-            <Text style={styles.buttonText}>Organize</Text>
+          <TouchableOpacity
+            style={styles.organizeButton}
+            onPress={handleOrganize}
+            disabled={saving}
+          >
+            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Organize'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -135,8 +171,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
   },

@@ -25,9 +25,6 @@ export default function AddNote() {
           <Text style={styles.closeIcon}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Note</Text>
-        <TouchableOpacity>
-          <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Title Section */}
@@ -61,9 +58,6 @@ export default function AddNote() {
       {/* Bottom Buttons */}
       <View style={styles.bottomSection}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.saveButton}>
-            <Text style={styles.buttonText}>Save</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.organizeButton}>
             <Text style={styles.buttonText}>Organize</Text>
           </TouchableOpacity>
@@ -99,11 +93,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    color: "#000000",
-  },
-  saveText: {
-    fontSize: 16,
     fontWeight: "600",
     color: "#000000",
   },

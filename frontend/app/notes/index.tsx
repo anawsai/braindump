@@ -8,11 +8,83 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+<<<<<<< Updated upstream
+=======
+  Pressable,
+  Alert,
+>>>>>>> Stashed changes
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchNotes, addNote } from "../../lib/api";
+import { fetchNotes, addNote, deleteNote } from "../../lib/api";
 
+<<<<<<< Updated upstream
+=======
+function NoteCard({ item, openMenuId, setOpenMenuId, onDelete }: any) {
+  const router = useRouter();
+
+  // Hover states
+  const [editHover, setEditHover] = useState(false);
+  const [deleteHover, setDeleteHover] = useState(false);
+
+  const isOpen = openMenuId === item.id;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.circleCheckbox} />
+        <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
+
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setOpenMenuId(isOpen ? null : item.id)}
+          hitSlop={{ top: 30, bottom: 30, left: 30, right: 30}}
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color="#333" />
+        </TouchableOpacity>
+
+        {isOpen && (
+          <View style={styles.dropdown}>
+            {/* EDIT */}
+            <Pressable
+              /* avoid extending Edit's hit area downward so it doesn't overlap Delete */
+              hitSlop={{ top: 30, bottom: 30, left: 30, right: 30 }}
+              onHoverIn={() => setEditHover(true)}
+              onHoverOut={() => setEditHover(false)}
+              style={() => [styles.dropdownItem, editHover && styles.dropdownItemHover]}
+              onPress={() => {
+                setOpenMenuId(null);
+                router.push(`/edit-notes/edit?id=${item.id}`);
+              }}
+            >
+              <Text style={[styles.dropdownText, editHover && styles.dropdownTextHover]}>Edit</Text>
+            </Pressable>
+
+            {/* DELETE */}
+            <Pressable
+              hitSlop={{ top: 30, bottom: 30, left: 30, right: 30 }}
+              onHoverIn={() => setDeleteHover(true)}
+              onHoverOut={() => setDeleteHover(false)}
+              style={() => [styles.dropdownItem, deleteHover && styles.dropdownItemHover]}
+            >
+              <Text style={[styles.dropdownText, deleteHover && styles.dropdownTextHover]}>Delete</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardContent}>{item.content}</Text>
+      </View>
+
+      <View style={styles.cardFooter}>
+        <Text style={styles.timestamp}>5 mins ago</Text>
+      </View>
+    </View>
+  );
+}
+
+>>>>>>> Stashed changes
 type Note = { id?: string; title?: string; content?: string };
 
 export default function Dump() {
@@ -30,6 +102,16 @@ export default function Dump() {
       setNotes(data ?? []);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(id?: string) {
+    if (!id) return;
+    try {
+      await deleteNote(id);
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to delete note');
     }
   }
 
@@ -55,6 +137,20 @@ export default function Dump() {
     );
   }, [notes, query]);
 
+  const todayNotes = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return notes.filter((n) => {
+      // Assuming notes have a created_at or timestamp field
+      // For now, we'll count all notes as "today" placeholder
+      return true; // Replace with actual date logic when timestamps are available
+    });
+  }, [notes]);
+
+  const allCount = notes.length;
+  const todayCount = todayNotes.length;
+  const upcomingCount = 0; // Placeholder - set when you have scheduled notes
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Notes</Text>
@@ -69,9 +165,6 @@ export default function Dump() {
           style={styles.searchInput}
           returnKeyType="search"
         />
-        <TouchableOpacity onPress={() => { /* placeholder for mic action */ }}>
-          <Ionicons name="mic" size={20} color="#666" style={styles.micIcon} />
-        </TouchableOpacity>
       </View>
 
       {/* Controls: Add button + filter chips */}
@@ -82,13 +175,13 @@ export default function Dump() {
 
         <View style={styles.chipsRow}>
           <TouchableOpacity style={[styles.chip, styles.chipActive]}>
-            <Text style={styles.chipText}>all (4)</Text>
+            <Text style={styles.chipText}>all ({allCount})</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>today (3)</Text>
+            <Text style={styles.chipText}>today ({todayCount})</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>upcoming (1)</Text>
+            <Text style={styles.chipText}>upcoming ({upcomingCount})</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -102,6 +195,7 @@ export default function Dump() {
           contentContainerStyle={{ paddingBottom: 24 }}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           renderItem={({ item }) => (
+<<<<<<< Updated upstream
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.circleCheckbox} />
@@ -119,6 +213,14 @@ export default function Dump() {
                 <Text style={styles.timestamp}>5 mins ago</Text>
               </View>
             </View>
+=======
+            <NoteCard
+              item={item}
+              openMenuId={openMenuId}
+              setOpenMenuId={setOpenMenuId}
+              onDelete={handleDelete}
+            />
+>>>>>>> Stashed changes
           )}
         />
       )}
@@ -191,10 +293,50 @@ const styles = StyleSheet.create({
     borderColor: "#2b1a0d",
     marginRight: 12,
   },
-  menuButton: { marginLeft: 'auto', padding: 6 },
+  menuButton: { marginLeft: 'auto', padding: 14, borderRadius: 12},
   cardBody: { minHeight: 80 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
   footerLeft: { flexDirection: "row", alignItems: "center" },
   footerText: { fontSize: 12, color: "#111", marginLeft: 4 },
   timestamp: { fontSize: 12, color: "#777" },
+<<<<<<< Updated upstream
+=======
+
+  dropdown: {
+  position: "absolute",
+  top: 30,
+  right: 0,
+  backgroundColor: "#FFB052",
+  borderWidth: 1,
+  borderColor: "#C9731E",
+  borderRadius: 10,
+  overflow: "hidden",
+  zIndex: 50,
+  alignItems: "stretch",
+},
+
+dropdownItem: {
+  width: 220,
+  paddingVertical: 12,
+  paddingHorizontal: 10,
+  borderBottomWidth: 0,
+  borderBottomColor: "#C9731E",
+  justifyContent: "center",
+  alignItems: "stretch",
+},
+
+dropdownItemHover: {
+    backgroundColor: "#FFFFFF",
+  },
+
+  dropdownText: {
+    color: "#2b1a0d",
+    width: "100%",
+    textAlign: "left",
+    paddingVertical: 0,
+  },
+  dropdownTextHover: {
+    color: "#2b1a0d",
+  },
+>>>>>>> Stashed changes
 });
