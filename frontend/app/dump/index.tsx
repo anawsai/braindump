@@ -1,5 +1,5 @@
 // Dump page (rename it later)
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,11 @@ import { addNote } from "../../lib/api";
 export default function Notes() {
   const [noteText, setNoteText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [prompt, setPrompt] = useState("What's on your mind today>");
+
+  useEffect(() => {
+    setPrompt(getRandomPrompt());
+  }, []);
 
   async function saveNote() {
     if (!noteText.trim()) {
@@ -42,6 +47,25 @@ export default function Notes() {
     await saveNote();
   }
 
+  const prompts: string[] = [
+    "What's on your mind today?",
+    "Are there any tasks you need to accomplish?",
+    "What's are some goals you have for the week?",
+    "What do you need to get off your chest?",
+    "Is there something you've been procrastinating on?",
+    "What makes you feel overwhelmed?",
+    "What's the most creative thing you've done recently?",
+    "Any idea is worth jotting down. What's yours?",
+    "What are you grateful for today?",
+    "What's a challenge you're facing right now?",
+    "Did something good happen recently?",
+  ]
+
+  function getRandomPrompt(): string {
+      const idx: number = Math.floor(Math.random() * prompts.length);
+      return prompts[idx];
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -60,7 +84,7 @@ export default function Notes() {
           source={require('../../assets/mascot.png')} 
           style={styles.mascotImage}
         />
-        <Text style={styles.promptText}>What makes you feel overwhelmed?</Text>
+        <Text style={styles.promptText}>{prompt}</Text>
       </View>
 
       {/* Text input area */}
