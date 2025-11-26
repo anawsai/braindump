@@ -129,6 +129,7 @@ export default function RootLayout() {
 
   function handleNavigate(path: string) {
     router.push(path);
+    setCollapsed(true);
   }
 
   return (
