@@ -1,6 +1,7 @@
 import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { LoadingProvider } from '../context/LoadingContext';
 import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
 
 function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void> }) {
@@ -128,20 +129,23 @@ export default function RootLayout() {
 
   function handleNavigate(path: string) {
     router.push(path);
+    setCollapsed(true);
   }
 
   return (
-    <View style={styles.container}>
-      {showMenu && (<Sidebar collapsed={collapsed} onNavigate={handleNavigate} onSignOut={handleSignOut} />)}
-      <View style={styles.content}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => setCollapsed((s) => !s)} style={styles.menuButton}>
-            {showMenu && <Text style={{ fontSize: 20 }}>{collapsed ? '☰' : '☰'}</Text>}
-          </Pressable>
+    <LoadingProvider>
+      <View style={styles.container}>
+        {showMenu && (<Sidebar collapsed={collapsed} onNavigate={handleNavigate} onSignOut={handleSignOut} />)}
+        <View style={styles.content}>
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => setCollapsed((s) => !s)} style={styles.menuButton}>
+              {showMenu && <Text style={{ fontSize: 20 }}>{collapsed ? '☰' : '☰'}</Text>}
+            </Pressable>
+          </View>
+          <Slot />
         </View>
-        <Slot />
       </View>
-    </View>
+    </LoadingProvider>
   );
 }
 
@@ -379,7 +383,7 @@ const styles = StyleSheet.create({
 
   signOutText: {
     fontSize: 16,
-    fontWeight: '550',
+    fontWeight: '500',
     color: '#000000',
   },
 
