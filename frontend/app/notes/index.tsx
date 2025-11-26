@@ -13,24 +13,28 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchNotes, addNote, deleteNote } from "../../lib/api";
+import { useLoading } from '../../context/LoadingContext';
 
 type Note = { id?: string; title?: string; content?: string };
 
 export default function Dump() {
   const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingNotes, setLoadingNotes] = useState(true);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const loading = useLoading();
   const [query, setQuery] = useState("");
 
   async function load() {
-    setLoading(true);
+    loading.start('Loading notes...');
+    setLoadingNotes(true);
     try {
       const data = await fetchNotes();
       setNotes(data ?? []);
     } finally {
-      setLoading(false);
+      setLoadingNotes(false);
+      loading.stop();
     }
   }
 

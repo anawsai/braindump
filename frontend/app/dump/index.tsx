@@ -1,5 +1,5 @@
 // Dump page (rename it later)
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,10 +11,12 @@ import {
   Alert,
 } from "react-native";
 import { addNote } from "../../lib/api";
+import { useLoading } from '../../context/LoadingContext';
 
 export default function Notes() {
   const [noteText, setNoteText] = useState("");
   const [saving, setSaving] = useState(false);
+  const loading = useLoading();
   const [prompt, setPrompt] = useState("What's on your mind today>");
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function Notes() {
     }
     try {
       setSaving(true);
+      loading.start('Saving...');
       console.log("POST /notes via Flask");
       const row = await addNote('Untitled', noteText); // (title, content)
       console.log("Saved row:", row);
@@ -38,6 +41,7 @@ export default function Notes() {
       Alert.alert('Error', e.message);
     } finally {
       setSaving(false);
+      loading.stop();
     }
   }
   
@@ -67,8 +71,11 @@ export default function Notes() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, (loading.active || saving) && styles.dimmed]}>
       <StatusBar barStyle="dark-content" />
+
+      {/* Loading screen overlay (visible during initial load or saving) */}
+      {/* Global loader is rendered by LoadingProvider at the root. */}
 
       {/* Header with avatar */}
       <View style={styles.header}>
@@ -88,7 +95,7 @@ export default function Notes() {
       </View>
 
       {/* Text input area */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, (loading.active || saving) && styles.dimmed]}>
         <TextInput
           placeholder="What's on your mind? Ideas, tasks, random thoughts, anything...."
           placeholderTextColor="#999"
@@ -96,6 +103,7 @@ export default function Notes() {
           value={noteText}
           onChangeText={setNoteText}
           style={styles.textInput}
+          editable={!loading.active}
         />
       </View>
 
@@ -104,7 +112,7 @@ export default function Notes() {
         <TouchableOpacity 
           style={styles.button}
           onPress={saveNote}
-          disabled={saving}
+          disabled={saving || loading.active}
         >
           <Text style={styles.buttonText}>
             {saving ? 'Saving...' : 'Save'}
@@ -113,7 +121,7 @@ export default function Notes() {
         <TouchableOpacity 
           style={styles.button}
           onPress={saveAndOrganize}
-          disabled={saving}
+          disabled={saving || loading.active}
         >
           <Text style={styles.buttonText}>
             {saving ? 'Saving...' : 'Save & Organize'}
@@ -172,6 +180,9 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#F5F5F5",
     marginBottom: 24,
+  },
+  dimmed: {
+    opacity: 0.5,
   },
   textInput: {
     flex: 1,
