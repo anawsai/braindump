@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchNotes, addNote, deleteNote } from "../../lib/api";
+import { useLoading } from '../../context/LoadingContext';
 
 function timeAgo(timestamp?: string) {
   if (!timestamp) return "";
@@ -118,19 +119,22 @@ function NoteCard({
 export default function Dump() {
   const router = useRouter();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingNotes, setLoadingNotes] = useState(true);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const loading = useLoading();
   const [query, setQuery] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   async function load() {
-    setLoading(true);
+    loading.start('Loading notes...');
+    setLoadingNotes(true);
     try {
       const data = await fetchNotes();
       setNotes(data ?? []);
     } finally {
-      setLoading(false);
+      setLoadingNotes(false);
+      loading.stop();
     }
   }
 
@@ -213,7 +217,7 @@ export default function Dump() {
         </View>
       </View>
 
-      {loading ? (
+      {loadingNotes ? (
         <ActivityIndicator />
       ) : (
         <FlatList
