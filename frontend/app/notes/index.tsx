@@ -3,18 +3,117 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
-  Alert
+  Alert,
+  Pressable,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchNotes, addNote, deleteNote } from "../../lib/api";
 
-type Note = { id?: string; title?: string; content?: string };
+function timeAgo(timestamp?: string) {
+  if (!timestamp) return "";
+
+  const now = new Date();
+  const past = new Date(timestamp);
+  const diff = Math.floor((now.getTime() - past.getTime()) / 1000); // seconds
+
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+type Note = { id?: string; title?: string; content?: string; created_at?: string };
+
+function NoteCard({
+  item,
+  openMenuId,
+  setOpenMenuId,
+  onDelete,
+}: {
+  item: Note;
+  openMenuId: string | null;
+  setOpenMenuId: (id: string | null) => void;
+  onDelete: (id?: string) => void;
+}) {
+  const router = useRouter();
+  const [editHover, setEditHover] = useState(false);
+  const [deleteHover, setDeleteHover] = useState(false);
+
+  const isOpen = openMenuId === item.id;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.circleCheckbox} />
+        <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setOpenMenuId(isOpen ? null : (item.id as string))}
+        >
+          <Ionicons name="ellipsis-vertical" size={18} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardContent}>{item.content}</Text>
+      </View>
+
+      <View style={styles.cardFooter}>
+        <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
+      </View>
+
+
+      {isOpen && (
+        <View
+          style={{
+            position: "absolute",
+            top: 40,
+            right: 16,
+            backgroundColor: "#fff",
+            borderWidth: 1,
+          }}
+        >
+          <Pressable
+            onPress={() => {
+              setOpenMenuId(null);
+              router.push({
+                pathname: "/edit-notes/edit",
+                params: { id: item.id}, });
+              }}
+
+            onHoverIn={() => setEditHover(true)}
+            onHoverOut={() => setEditHover(false)}
+            style={{
+              padding: 12,
+              backgroundColor: editHover ? "#f0f0f0" : "#fff",
+            }}
+          >
+            <Text>Edit</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setOpenMenuId(null);
+              onDelete(item.id);
+            }}
+            onHoverIn={() => setDeleteHover(true)}
+            onHoverOut={() => setDeleteHover(false)}
+            style={{
+              padding: 12,
+              backgroundColor: deleteHover ? "#f0f0f0" : "#fff",
+            }}
+          >
+            <Text>Delete</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function Dump() {
   const router = useRouter();
@@ -23,6 +122,7 @@ export default function Dump() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [query, setQuery] = useState("");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -40,7 +140,7 @@ export default function Dump() {
       await deleteNote(id);
       await load();
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to delete note');
+      Alert.alert("Error", e.message || "Failed to delete note");
     }
   }
 
@@ -67,24 +167,19 @@ export default function Dump() {
   }, [notes, query]);
 
   const todayNotes = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return notes.filter((n) => {
-      // Assuming notes have a created_at or timestamp field
-      // For now, we'll count all notes as "today" placeholder
-      return true; // Replace with actual date logic when timestamps are available
-    });
+    // placeholder – update when notes have dates
+    return notes;
   }, [notes]);
 
   const allCount = notes.length;
   const todayCount = todayNotes.length;
-  const upcomingCount = 0; // Placeholder - set when you have scheduled notes
+  const upcomingCount = 0;
 
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Notes</Text>
 
-      {/* Search bar with icons */}
+      {/* Search bar */}
       <View style={styles.searchRow}>
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
@@ -96,9 +191,12 @@ export default function Dump() {
         />
       </View>
 
-      {/* Controls: Add button + filter chips */}
+      {/* Add + chips */}
       <View style={styles.controlsRow}>
-        <TouchableOpacity style={styles.addButton} onPress={() => router.push("/edit-notes/edit")}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push("/edit-notes/edit")}
+        >
           <Text style={styles.addButtonText}>＋ Add Note</Text>
         </TouchableOpacity>
 
@@ -124,23 +222,12 @@ export default function Dump() {
           contentContainerStyle={{ paddingBottom: 24 }}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.circleCheckbox} />
-                <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
-                <TouchableOpacity style={styles.menuButton}>
-                  <Ionicons name="ellipsis-vertical" size={18} color="#333" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.cardBody}>
-                <Text style={styles.cardContent}>{item.content}</Text>
-              </View>
-
-              <View style={styles.cardFooter}>
-                <Text style={styles.timestamp}>5 mins ago</Text>
-              </View>
-            </View>
+            <NoteCard
+              item={item}
+              openMenuId={openMenuId}
+              setOpenMenuId={setOpenMenuId}
+              onDelete={handleDelete}
+            />
           )}
         />
       )}
@@ -151,6 +238,7 @@ export default function Dump() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   heading: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
+
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -162,28 +250,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   searchIcon: { marginRight: 8 },
-  micIcon: { marginLeft: 8 },
   searchInput: { flex: 1, fontSize: 16, padding: 0 },
-  addSection: { marginBottom: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
+
+  /* controls */
+  controlsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
-  multiline: { minHeight: 60 },
-  card: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#7A4C2B",
-    borderRadius: 10,
-    backgroundColor: "#f6f3f0",
-  },
-  cardTitle: { fontWeight: "700", marginBottom: 6 },
-  cardContent: { color: "#333" },
-  /* new styles */
-  controlsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   addButton: {
     backgroundColor: "#FFB052",
     paddingHorizontal: 14,
@@ -204,7 +279,21 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: "#FFB052" },
   chipText: { color: "#2b1a0d", fontWeight: "600" },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+
+  /* cards */
+  card: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#7A4C2B",
+    borderRadius: 10,
+    backgroundColor: "#f6f3f0",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   circleCheckbox: {
     width: 20,
     height: 20,
@@ -213,10 +302,22 @@ const styles = StyleSheet.create({
     borderColor: "#2b1a0d",
     marginRight: 12,
   },
-  menuButton: { marginLeft: 'auto', padding: 14, borderRadius: 12},
-  cardBody: { minHeight: 80 },
-  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
-  footerLeft: { flexDirection: "row", alignItems: "center" },
-  footerText: { fontSize: 12, color: "#111", marginLeft: 4 },
+  menuButton: {
+    marginLeft: "auto",
+    padding: 10,
+    borderRadius: 12,
+  },
+  cardTitle: { fontWeight: "700", fontSize: 16 },
+  cardBody: {
+    marginTop: 4,
+  },
+  cardContent: { color: "#333", fontSize: 14 },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 60,
+  },
   timestamp: { fontSize: 12, color: "#777" },
 });
+

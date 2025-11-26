@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,19 +11,48 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { addNote } from "../../lib/api";
+import { addNote, fetchNoteById, updateNote } from "../../lib/api";
 
 const CATEGORIES = ["Health", "Work", "Personal", "Ideas", "Tasks", "Learning"];
 
 export default function EditNote() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const isEditing = !!id;
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Health");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(isEditing);
+
+  useEffect(() => {
+    if (isEditing && id) {
+      loadNote();
+    }
+  }, [id]);
+
+  async function loadNote() {
+    setLoading(true);
+    try {
+      const note = await fetchNoteById(id as string);
+      if (note) {
+        setTitle(note.title || "");
+        setContent(note.content || "");
+        setCategory(note.category || "Health");
+      } else {
+        Alert.alert('Error', 'Note not found');
+        router.back();
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to load note');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSave() {
     if (!title.trim() || !content.trim()) {
@@ -60,7 +89,7 @@ export default function EditNote() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="close" size={28} color="#000000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Note</Text>
+        <Text style={styles.headerTitle}>Edit Note</Text>
         <View style={{ width: 50 }} />
       </View>
 
