@@ -16,9 +16,15 @@ CORS(app)
 
 @app.get("/health")
 def health():
+<<<<<<< Updated upstream
     return jsonify({"ok": True})
 
 @app.get("/notes/")
+=======
+    return jsonify({"ok": True}), 200
+
+@app.get("/notes")
+>>>>>>> Stashed changes
 def get_notes():
     data = supabase.table("notes").select("*").execute()
     return jsonify(data.data)
@@ -66,6 +72,7 @@ def update_note(note_id: int):
 
     response = supabase.table("notes").update(updates).eq("id", note_id).execute()
 
+<<<<<<< Updated upstream
     
     return jsonify({"message": f"TODO: update note with id {note_id}"})
 
@@ -81,6 +88,8 @@ def delete_note(note_id: int):
     
     return jsonify({"message": f"TODO: delete note with id {note_id}"})
 
+=======
+>>>>>>> Stashed changes
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5001"))
     app.run(host="0.0.0.0", port=port, debug=True)
