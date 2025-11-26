@@ -27,14 +27,12 @@ export default function Dump() {
   const [query, setQuery] = useState("");
 
   async function load() {
-    loading.start('Loading notes...');
     setLoadingNotes(true);
     try {
       const data = await fetchNotes();
       setNotes(data ?? []);
     } finally {
       setLoadingNotes(false);
-      loading.stop();
     }
   }
 
