@@ -11,11 +11,17 @@ function Sidebar({
   onNavigate,
   onSignOut,
   noteCount,
+  profileName,
+  profileEmail,
+  profileInitials,
 }: {
   collapsed: boolean;
   onNavigate: (path: string) => void;
   onSignOut: () => Promise<void>;
   noteCount: number;
+  profileName: string;
+  profileEmail: string;
+  profileInitials: string;
 }) {
   if (collapsed) return null;
 
@@ -33,11 +39,11 @@ function Sidebar({
       <View style={styles.profileSection}>
         <View style={styles.profileRow}>
           <View style={styles.profileCircle}>
-            <Text style={styles.profileInitials}>JJ</Text>
+            <Text style={styles.profileInitials}>{profileInitials}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Jeffrey Jones</Text>
-            <Text style={styles.profileEmail}>jeffreyjones@gmail.com</Text>
+            <Text style={styles.profileName}>{profileName}</Text>
+            <Text style={styles.profileEmail}>{profileEmail}</Text>
           </View>
         </View>
 
@@ -122,6 +128,42 @@ export default function RootLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [noteCount, setNoteCount] = useState(0);
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileInitials, setProfileInitials] = useState('');
+
+  function applySessionUser(session: any | null) {
+  if (!session || !session.user) {
+    setProfileName('');
+    setProfileEmail('');
+    setProfileInitials('');
+    return;
+  }
+
+  const user = session.user;
+
+  // Adjust these keys if you used a different field when signing up
+  const fullName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.user_metadata?.username ||
+    (user.email ? user.email.split('@')[0] : 'User');
+
+  const email = user.email ?? '';
+
+  // Make initials like "RJ" from "Rachel Jung"
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part: string) => part[0]?.toUpperCase())
+    .join('') || 'U';
+
+  setProfileName(fullName);
+  setProfileEmail(email);
+  setProfileInitials(initials);
+}
+
 
   async function loadNoteCount() {
     try {
@@ -136,6 +178,7 @@ export default function RootLayout() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setShowMenu(true);
+        applySessionUser(session);
         router.replace('/home');
         await loadNoteCount();
       } else {
@@ -149,10 +192,12 @@ export default function RootLayout() {
       async (_event, session) => {
         if (session) {
           setShowMenu(true);
+          applySessionUser(session);
           router.replace('/home');
           await loadNoteCount();
         } else {
           setShowMenu(false);
+          applySessionUser(null);
           router.replace('/login');
           setNoteCount(0);
         }
@@ -183,6 +228,9 @@ export default function RootLayout() {
             onNavigate={handleNavigate}
             onSignOut={handleSignOut}
             noteCount={noteCount}
+            profileName={profileName}
+            profileEmail={profileEmail}
+            profileInitials={profileInitials}
           />
         )}
         <View style={styles.content}>
