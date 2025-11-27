@@ -146,8 +146,8 @@ def give_advice(note_text: str):
             You are a smart personal productivity assistant.
             - Extract tasks from the user's notes.
             - Decide the best task to do first based on urgency or importance.
-            - If nothing actionable exists, say "No actionable tasks found."
-            - Keep the advice short and clear.
+            - If nothing to do, say "No tasks found."
+            - Keep advice short and clear.
             - Never invent impossible tasks (only use what the user mentioned).
             Respond as JSON with:
             {
