@@ -3,9 +3,20 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { LoadingProvider } from '../context/LoadingContext';
 import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
+import { fetchNotes } from '../lib/api';
+import {Ionicons} from "@expo/vector-icons";
 
-function Sidebar({ collapsed, onNavigate, onSignOut, }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void>; }) {
-
+function Sidebar({
+  collapsed,
+  onNavigate,
+  onSignOut,
+  noteCount,
+}: {
+  collapsed: boolean;
+  onNavigate: (path: string) => void;
+  onSignOut: () => Promise<void>;
+  noteCount: number;
+}) {
   if (collapsed) return null;
 
   return (
@@ -30,14 +41,15 @@ function Sidebar({ collapsed, onNavigate, onSignOut, }: { collapsed: boolean; on
           </View>
         </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Image source={require('../assets/23.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>30</Text>
+        <View style={styles.statsWrapper}>
+          <View style={styles.statItem}>
+            <Ionicons name="document-text" size={23} color="#000" />
+            <Text style={styles.statText}>{noteCount}</Text>
           </View>
-          <View style={styles.stat}>
-            <Image source={require('../assets/checkmark.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>5</Text>
+
+          <View style={styles.statItem}>
+            <Ionicons name="checkmark-circle" size={23} color="#000" />
+            <Text style={styles.statText}>5</Text>
           </View>
         </View>
       </View>
@@ -47,12 +59,20 @@ function Sidebar({ collapsed, onNavigate, onSignOut, }: { collapsed: boolean; on
           <Text style={styles.navButtonText}>Dump</Text>
         </Pressable>
 
-        <Pressable style={[styles.navButton, styles.navButtonActive]} onPress={() => onNavigate('/notes')}>
-          <Image source={require('../assets/notes.png')} style={styles.navButtonIconImage} />
+        <Pressable
+          style={[styles.navButton, styles.navButtonActive]}
+          onPress={() => onNavigate('/notes')}
+        >
+          <Ionicons name="journal" size={25} color="#000" style={styles.navButtonIcon} />
           <Text style={styles.navButtonText}>Notes</Text>
         </Pressable>
 
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/review')}>
+
+
+        <Pressable
+          style={styles.navButton}
+          onPress={() => onNavigate('/review')}
+        >
           <Text style={styles.navButtonText}>Review</Text>
         </Pressable>
       </View>
@@ -60,11 +80,17 @@ function Sidebar({ collapsed, onNavigate, onSignOut, }: { collapsed: boolean; on
       <View style={styles.dividerLine} />
 
       <View style={[styles.quickActions, { marginTop: 18 }]}>
-        <Pressable style={styles.settingsButton} onPress={() => onNavigate('/settings')}>
+        <Pressable
+          style={styles.settingsButton}
+          onPress={() => onNavigate('/settings')}
+        >
           <Text style={styles.navButtonText}>Settings</Text>
         </Pressable>
 
-        <Pressable style={styles.settingsButton} onPress={() => onNavigate('/help')}>
+        <Pressable
+          style={styles.settingsButton}
+          onPress={() => onNavigate('/help')}
+        >
           <Text style={styles.navButtonText}>Help & Support</Text>
         </Pressable>
       </View>
@@ -83,7 +109,7 @@ function Sidebar({ collapsed, onNavigate, onSignOut, }: { collapsed: boolean; on
             }
           }}
         >
-          <Image source={require('../assets/signout.png')} style={styles.signOutIconImage} />
+          <Ionicons name="log-out-outline" size={28} color="#000" style={styles.navButtonIcon} />
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </View>
@@ -95,29 +121,43 @@ export default function RootLayout() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [noteCount, setNoteCount] = useState(0);
+
+  async function loadNoteCount() {
+    try {
+      const notes = await fetchNotes();
+      setNoteCount(notes.length);
+    } catch (error: any) {
+      console.error('Error loading note count:', error?.message ?? error);
+    }
+  }
 
   useEffect(() => {
-    // check auth when the app loads
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setShowMenu(true);
         router.replace('/home');
+        await loadNoteCount();
       } else {
         setShowMenu(false);
         router.replace('/login');
+        setNoteCount(0);
       }
     });
 
-    // check for sign-in / sign-out
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setShowMenu(true);
-        router.replace('/home');
-      } else {
-        setShowMenu(false);
-        router.replace('/login');
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session) {
+          setShowMenu(true);
+          router.replace('/home');
+          await loadNoteCount();
+        } else {
+          setShowMenu(false);
+          router.replace('/login');
+          setNoteCount(0);
+        }
       }
-    });
+    );
 
     return () => sub.subscription.unsubscribe();
   }, [router]);
@@ -126,6 +166,7 @@ export default function RootLayout() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     router.replace('/login');
+    setNoteCount(0);
   }
 
   function handleNavigate(path: string) {
@@ -136,11 +177,21 @@ export default function RootLayout() {
   return (
     <LoadingProvider>
       <View style={styles.container}>
-        {showMenu && (<Sidebar collapsed={collapsed} onNavigate={handleNavigate} onSignOut={handleSignOut} />)}
+        {showMenu && (
+          <Sidebar
+            collapsed={collapsed}
+            onNavigate={handleNavigate}
+            onSignOut={handleSignOut}
+            noteCount={noteCount}
+          />
+        )}
         <View style={styles.content}>
           <View style={styles.headerRow}>
-            <Pressable onPress={() => setCollapsed((s) => !s)} style={styles.menuButton}>
-              {showMenu && <Text style={{ fontSize: 20 }}>{collapsed ? '☰' : '☰'}</Text>}
+            <Pressable
+              onPress={() => setCollapsed((s) => !s)}
+              style={styles.menuButton}
+            >
+              {showMenu && <Text style={{ fontSize: 20 }}>{'☰'}</Text>}
             </Pressable>
           </View>
           <Slot />
@@ -154,7 +205,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#FFB052',
+    backgroundColor: '#FFFFFF',
     padding: 0,
   },
 
@@ -173,7 +224,7 @@ const styles = StyleSheet.create({
   },
 
   sidebarCollapsed: {
-    display: 'none'
+    display: 'none',
   },
 
   mascotSection: {
@@ -196,9 +247,10 @@ const styles = StyleSheet.create({
   },
 
   profileSection: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
+  paddingVertical: 15,
+  paddingHorizontal: 15,
+  minHeight: 120,
+},
 
   profileRow: {
     flexDirection: 'row',
@@ -207,18 +259,21 @@ const styles = StyleSheet.create({
   },
 
   profileCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 85,
+    height: 85,
+    borderRadius: 50,
     backgroundColor: '#FF8D05',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    position: 'relative',
+    bottom: -10,
+    left: -10,
   },
 
   profileInitials: {
     fontSize: 20,
-    fontWeight: 700,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 
@@ -239,41 +294,31 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginTop: 8,
+  statsWrapper: {
+    position: "absolute",
+    right: 65,
+    bottom: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
   },
 
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 18,
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 
-  statIcon: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-
-
-  statIconImage: {
-    width: 20,
-    height: 20,
-    marginRight: 8,
-    resizeMode: 'contain',
-  },
-
-  statNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
+  statText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#000",
   },
 
   navSection: {
+    alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 12,
-    marginTop: 28,
+    marginTop: 30,
   },
 
   navButton: {
@@ -286,32 +331,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#000000',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     marginBottom: 22,
     height: 44,
   },
 
   navButtonIcon: {
     position: 'absolute',
-    left: 12,
-    top: 4,
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#000000',
-    color: '#fff',
-    textAlign: 'center',
-    lineHeight: 36,
-    fontSize: 18,
-  },
-
-  navButtonIconImage: {
-    position: 'absolute',
-    left: 12,
-    top: 6,
-    width: 28,
-    height: 28,
-    resizeMode: 'contain',
+    left: 16,
   },
 
   navButtonText: {
@@ -330,17 +357,16 @@ const styles = StyleSheet.create({
   },
 
   bottomSection: {
-    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 60,
-    marginTop: 0,
+    alignItems: 'center',
   },
 
   quickActions: {
     paddingHorizontal: 16,
     paddingTop: 14,
+    alignItems: 'center',
   },
-
 
   settingsButton: {
     backgroundColor: '#FFFFFF',
@@ -350,10 +376,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     alignItems: 'center',
-    width: '85%',
+    width: '90%',
     marginBottom: 22,
     height: 44,
     justifyContent: 'center',
+    flexDirection: 'row',
   },
 
   signOutButton: {
@@ -378,7 +405,7 @@ const styles = StyleSheet.create({
   signOutIconImage: {
     width: 30,
     height: 30,
-    marginRight:15,
+    marginRight: 15,
     resizeMode: 'contain',
   },
 

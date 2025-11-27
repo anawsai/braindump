@@ -68,7 +68,6 @@ function NoteCard({
         <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
       </View>
 
-
       {isOpen && (
         <View
           style={{
@@ -84,9 +83,9 @@ function NoteCard({
               setOpenMenuId(null);
               router.push({
                 pathname: "/edit-notes/edit",
-                params: { id: item.id}, });
-              }}
-
+                params: { id: item.id },
+              });
+            }}
             onHoverIn={() => setEditHover(true)}
             onHoverOut={() => setEditHover(false)}
             style={{
@@ -127,7 +126,7 @@ export default function Dump() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   async function load() {
-    loading.start('Loading notes...');
+    loading.start("Loading notes...");
     setLoadingNotes(true);
     try {
       const data = await fetchNotes();
@@ -170,9 +169,15 @@ export default function Dump() {
     );
   }, [notes, query]);
 
+  // 🔹 Only notes created *today* based on created_at
   const todayNotes = useMemo(() => {
-    // placeholder – update when notes have dates
-    return notes;
+    const todayStr = new Date().toDateString(); // e.g. "Tue Nov 26 2025"
+
+    return notes.filter((note) => {
+      if (!note.created_at) return false;
+      const createdDate = new Date(note.created_at);
+      return createdDate.toDateString() === todayStr;
+    });
   }, [notes]);
 
   const allCount = notes.length;
@@ -185,7 +190,12 @@ export default function Dump() {
 
       {/* Search bar */}
       <View style={styles.searchRow}>
-        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <Ionicons
+          name="search"
+          size={20}
+          color="#666"
+          style={styles.searchIcon}
+        />
         <TextInput
           placeholder="Search your thoughts..."
           value={query}
@@ -199,7 +209,7 @@ export default function Dump() {
       <View style={styles.controlsRow}>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push("/edit-notes/edit")}
+          onPress={() => router.push("/add-notes/add-notes")}
         >
           <Text style={styles.addButtonText}>＋ Add Note</Text>
         </TouchableOpacity>
@@ -324,4 +334,5 @@ const styles = StyleSheet.create({
   },
   timestamp: { fontSize: 12, color: "#777" },
 });
+
 
