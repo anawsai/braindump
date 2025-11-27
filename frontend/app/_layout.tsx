@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import { LoadingProvider } from '../context/LoadingContext';
 import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
 
-function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void> }) {
+function Sidebar({ collapsed, onNavigate, onSignOut, }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void>; }) {
+
   if (collapsed) return null;
 
   return (
@@ -32,7 +33,7 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Image source={require('../assets/23.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>23</Text>
+            <Text style={styles.statNumber}>30</Text>
           </View>
           <View style={styles.stat}>
             <Image source={require('../assets/checkmark.png')} style={styles.statIconImage} />

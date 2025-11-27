@@ -27,32 +27,28 @@ export default function EditNote() {
   const [category, setCategory] = useState("Health");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(isEditing);
+  const [loading, setLoadingNote] = useState(isEditing);
 
   useEffect(() => {
-    if (isEditing && id) {
-      loadNote();
-    }
-  }, [id]);
+    if (!isEditing) return;
 
-  async function loadNote() {
-    setLoading(true);
-    try {
-      const note = await fetchNoteById(id as string);
-      if (note) {
+    async function loadNote() {
+      try {
+        setLoadingNote(true);
+        const note = await fetchNoteById(String(id));
         setTitle(note.title || "");
         setContent(note.content || "");
-        setCategory(note.category || "Health");
-      } else {
-        Alert.alert('Error', 'Note not found');
-        router.back();
+        if (note.category) setCategory(note.category);
+      } catch (e: any) {
+        console.error("Failed to load note", e);
+        Alert.alert("Error", e.message || "Failed to load note");
+      } finally {
+        setLoadingNote(false);
       }
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to load note');
-    } finally {
-      setLoading(false);
     }
-  }
+
+    loadNote();
+  }, [id, isEditing]);
 
   async function handleSave() {
     if (!title.trim() || !content.trim()) {
@@ -62,19 +58,26 @@ export default function EditNote() {
 
     setSaving(true);
     try {
-      await addNote(title, content);
-      Alert.alert('Success', 'Note saved!');
-      setTitle("");
-      setContent("");
-      setCategory("Health");
-      router.back();
+      if (isEditing) {
+      await updateNote(String(id), {
+          title: title.trim(),
+          content: content.trim(),
+        });
+      } else {
+        await addNote(title.trim(), content.trim());
+        Alert.alert("Success", "Note created successfully");}
+
+        setTitle("");
+        setContent("");
+        setCategory("Health");
+        router.replace('/notes');
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to save note');
+      console.error("Failed to save note", e);
+      Alert.alert("Error", e.message || "Failed to save note");
     } finally {
       setSaving(false);
     }
   }
-
   async function handleOrganize() {
     // For now, organize just saves the note
     await handleSave();
