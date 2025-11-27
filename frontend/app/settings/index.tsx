@@ -1,5 +1,5 @@
-// app/settings.tsx  (or wherever your screen lives)
-import React, { useState } from "react";
+// app/settings.tsx
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,18 +10,73 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { supabase } from "../../lib/supabase";
 
 export default function SettingsScreen() {
   const router = useRouter();
+
+  // === UI toggles ===
   const [keepPrivate, setKeepPrivate] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [weeklyReview, setWeeklyReview] = useState(true);
   const [taskReminders, setTaskReminders] = useState(true);
   const [stressAlerts, setStressAlerts] = useState(true);
 
-  const handleSignOut = () => {
-    // TODO: hook up to your auth / supabase sign-out
-    console.log("Sign out");
+  // === Profile state (same idea as sidebar) ===
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileInitials, setProfileInitials] = useState("");
+
+  // Helper: extract name/email/initials from Supabase user
+  function applySessionUser(session: any | null) {
+    if (!session || !session.user) {
+      setProfileName("");
+      setProfileEmail("");
+      setProfileInitials("");
+      return;
+    }
+
+    const user = session.user;
+
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.user_metadata?.username ||
+      (user.email ? user.email.split("@")[0] : "User");
+
+    const email = user.email ?? "";
+
+    const initials =
+      fullName
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part: string) => part[0]?.toUpperCase())
+        .join("") || "U";
+
+    setProfileName(fullName);
+    setProfileEmail(email);
+    setProfileInitials(initials);
+  }
+
+  // Load current user when settings screen mounts
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error("Error getting session in settings:", error.message);
+        return;
+      }
+      applySessionUser(data.session ?? null);
+    });
+  }, []);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Sign out error:", error.message);
+      return;
+    }
+    router.replace("/login");
   };
 
   return (
@@ -39,11 +94,17 @@ export default function SettingsScreen() {
       <Text style={styles.sectionTitle}>Account</Text>
       <View style={styles.card}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>JJ</Text>
+          <Text style={styles.avatarText}>
+            {profileInitials || "JJ"}
+          </Text>
         </View>
         <View>
-          <Text style={styles.accountName}>Jeffrey Jones</Text>
-          <Text style={styles.accountEmail}>jeffreyjones@gmail.com</Text>
+          <Text style={styles.accountName}>
+            {profileName || "Jeffrey Jones"}
+          </Text>
+          <Text style={styles.accountEmail}>
+            {profileEmail || "jeffreyjones@gmail.com"}
+          </Text>
         </View>
       </View>
 
@@ -94,7 +155,6 @@ export default function SettingsScreen() {
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
     </ScrollView>
-
   );
 }
 
@@ -220,3 +280,4 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
 });
+
