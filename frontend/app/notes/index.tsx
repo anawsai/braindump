@@ -56,7 +56,7 @@ function NoteCard({
           style={styles.menuButton}
           onPress={() => setOpenMenuId(isOpen ? null : (item.id as string))}
         >
-          <Ionicons name="ellipsis-vertical" size={18} color="#333" />
+          <Ionicons name="ellipsis-vertical" size={22} color="#333" />
         </TouchableOpacity>
       </View>
 
@@ -250,20 +250,27 @@ export default function Dump() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  heading: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 24,
+    paddingBottom: 16,
+    backgroundColor: "#FFFFFF",
+  },
+
+  heading: { fontSize: 22, fontWeight: "700", marginBottom: 18 },
 
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#e5e5e5",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 12,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 20,
   },
-  searchIcon: { marginRight: 8 },
+  searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 16, padding: 0 },
 
   /* controls */
@@ -271,7 +278,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 20,
   },
   addButton: {
     backgroundColor: "#FFB052",
@@ -281,7 +288,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#C9731E",
   },
-  addButtonText: { color: "#2b1a0d", fontWeight: "600" },
+  addButtonText: { color: "#2b1a0d", fontWeight: "600", fontSize: 14 },
   chipsRow: { flexDirection: "row", gap: 8 },
   chip: {
     backgroundColor: "#FFDAB3",
