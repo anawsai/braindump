@@ -191,7 +191,7 @@ export default function RootLayout() {
               onPress={() => setCollapsed((s) => !s)}
               style={styles.menuButton}
             >
-              {showMenu && <Text style={{ fontSize: 20 }}>{'☰'}</Text>}
+              {showMenu && <Text style={{ fontSize: 30 }}>{'☰'}</Text>}
             </Pressable>
           </View>
           <Slot />
