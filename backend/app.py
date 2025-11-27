@@ -119,7 +119,7 @@ def embed_cluster_notes(get_notes):
     for item in notes_list:
         text = item.get("content") or item.get("title") or ""
         if text.strip() and is_meaningful(text):
-            notes.append(text)
+            notes.append({"id": item["id"], "text": text})
     # notes = ["This is a great product!", "I love using this service."]
     n_clusters: int = 10
     model_name = "all-MiniLM-L6-v2"
@@ -202,6 +202,12 @@ def get_advice():
         return jsonify({"error": "missing note text"}), 400
     advice = give_advice(note_text)
     return jsonify({"advice": advice})
+def get_notes_raw():
+    try:
+        res = supabase.table("notes").select("*").execute()
+        return res.data
+    except Exception as e:
+        return []
 
 def get_actual_notes():
     try:
