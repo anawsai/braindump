@@ -43,3 +43,13 @@ export async function deleteNote(id: string) {
   if (!res.ok) throw new Error("Failed to delete note");
   return res.json();
 }
+
+export async function getAdvice(title: string, content: string) {
+  const res = await fetch(`${API}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, content }),
+  });
+  const data = await res.json();
+  return data.advice
+}

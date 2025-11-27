@@ -103,17 +103,29 @@ def embed_cluster_notes(get_notes):
     for item in notes_list:
         text = item.get("content") or item.get("title") or ""
         if text.strip() and is_meaningful(text):
-            notes.append(text)
+            notes.append({"id": item["id"], "text": text})
     # notes = ["This is a great product!", "I love using this service."]
     n_clusters: int = 10
     model_name = "all-MiniLM-L6-v2"
     model = SentenceTransformer(model_name)
-    embeddings = model.encode(notes, show_progress_bar=False)
+
+    texts = [n["text"] for n in notes]
+    embeddings = model.encode(texts, show_progress_bar=False)
+    embeddings_list = [emb.tolist() for emb in embeddings]
+
+    
+
+    for note, embed in zip(notes, embeddings_list): 
+        # supabase.table("notes").update({"embedding": embed}).eq("id", note["id"]).execute()
+        update_embed = supabase.table("notes").update({"embedding": embed}).eq("id", note["id"]).execute()
+        print("[EMBEDDING UPDATE]", note["id"], update_embed)
 
     hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=2, min_samples=1, metric='euclidean')
     labels = hdbscan_model.fit_predict(embeddings)
+    for note, label in zip(notes, labels):
+        supabase.table("notes").update({"cluster": int(label)}).eq("id", note["id"]).execute()
 
-    note_to_cluster = {notes[i]: int(labels[i]) for i in range(len(notes))}
+    note_to_cluster = {notes[i]["ic"]: int(labels[i]) for i in range(len(notes))}
     return note_to_cluster
 
 
@@ -174,12 +186,19 @@ def get_advice():
         return jsonify({"error": "missing note text"}), 400
     advice = give_advice(note_text)
     return jsonify({"advice": advice})
+def get_notes_raw():
+    try:
+        res = supabase.table("notes").select("*").execute()
+        return res.data
+    except Exception as e:
+        return []
 
 @app.get("/")
 def home():
     return jsonify({"message": "Backend is running"}), 200
 
 if __name__ == "__main__":
+    embed_cluster_notes(get_notes_raw)
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5001)))
 
 
