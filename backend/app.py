@@ -23,6 +23,10 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app = Flask(__name__)
 CORS(app)
 
+@app.get("/health")
+def health():
+    return jsonify({"ok": True}), 200
+
 @app.get("/notes")
 def get_notes():
     try:

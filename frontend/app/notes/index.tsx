@@ -48,70 +48,78 @@ function NoteCard({
   const isOpen = openMenuId === item.id;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.circleCheckbox} />
-        <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setOpenMenuId(isOpen ? null : (item.id as string))}
-        >
-          <Ionicons name="ellipsis-vertical" size={22} color="#333" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.cardBody}>
-        <Text style={styles.cardContent}>{item.content}</Text>
-      </View>
-
-      <View style={styles.cardFooter}>
-        <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
-      </View>
-
-      {isOpen && (
-        <View
-          style={{
-            position: "absolute",
-            top: 40,
-            right: 16,
-            backgroundColor: "#fff",
-            borderWidth: 1,
-          }}
-        >
-          <Pressable
-            onPress={() => {
-              setOpenMenuId(null);
-              router.push({
-                pathname: "/edit-notes/edit",
-                params: { id: item.id },
-              });
-            }}
-            onHoverIn={() => setEditHover(true)}
-            onHoverOut={() => setEditHover(false)}
-            style={{
-              padding: 12,
-              backgroundColor: editHover ? "#f0f0f0" : "#fff",
+    <TouchableOpacity
+      onPress={() => router.push({ pathname: "/note-detail/[id]", params: { id: item.id } })}
+      activeOpacity={0.7}
+    >
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.circleCheckbox} />
+          <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              setOpenMenuId(isOpen ? null : (item.id as string));
             }}
           >
-            <Text>Edit</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              setOpenMenuId(null);
-              onDelete(item.id);
-            }}
-            onHoverIn={() => setDeleteHover(true)}
-            onHoverOut={() => setDeleteHover(false)}
-            style={{
-              padding: 12,
-              backgroundColor: deleteHover ? "#f0f0f0" : "#fff",
-            }}
-          >
-            <Text>Delete</Text>
-          </Pressable>
+            <Ionicons name="ellipsis-vertical" size={22} color="#333" />
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
+
+        <View style={styles.cardBody}>
+          <Text style={styles.cardContent}>{item.content}</Text>
+        </View>
+
+        <View style={styles.cardFooter}>
+          <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
+        </View>
+
+        {isOpen && (
+          <View
+            style={{
+              position: "absolute",
+              top: 40,
+              right: 16,
+              backgroundColor: "#fff",
+              borderWidth: 1,
+            }}
+          >
+            <Pressable
+              onPress={() => {
+                setOpenMenuId(null);
+                router.push({
+                  pathname: "/edit-notes/edit",
+                  params: { id: item.id },
+                });
+              }}
+              onHoverIn={() => setEditHover(true)}
+              onHoverOut={() => setEditHover(false)}
+              style={{
+                padding: 12,
+                backgroundColor: editHover ? "#f0f0f0" : "#fff",
+              }}
+            >
+              <Text>Edit</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setOpenMenuId(null);
+                onDelete(item.id);
+              }}
+              onHoverIn={() => setDeleteHover(true)}
+              onHoverOut={() => setDeleteHover(false)}
+              style={{
+                padding: 12,
+                backgroundColor: deleteHover ? "#f0f0f0" : "#fff",
+              }}
+            >
+              <Text>Delete</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 }
 
