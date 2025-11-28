@@ -62,6 +62,7 @@ export default function EditNote() {
       await updateNote(String(id), {
           title: title.trim(),
           content: content.trim(),
+          category: category,
         });
       } else {
         await addNote(title.trim(), content.trim());

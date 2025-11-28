@@ -59,6 +59,7 @@ def update_note(note_id: str):
     updates = {}
     if "title" in data:   updates["title"]   = (data["title"] or "").strip()
     if "content" in data: updates["content"] = (data["content"] or "").strip()
+    if "category" in data: updates["category"] = (data["category"] or "").strip() 
     if not updates:
         return jsonify({"error": "No fields to update"}), 400
     try:
