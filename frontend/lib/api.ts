@@ -26,7 +26,7 @@ export async function fetchNoteById(id: string) {
 // update a note by ID (calls PUT /notes/:id)
 export async function updateNote(
   id: string,
-  updates: { title?: string; content?: string }
+  updates: { title?: string; content?: string; category?: string}
 ) {
   const res = await fetch(`${API}/notes/${id}`, {
     method: "PUT",
@@ -52,4 +52,18 @@ export async function getAdvice(title: string, content: string) {
   });
   const data = await res.json();
   return data.advice
+}
+
+import { supabase } from "../lib/supabase";
+export async function getRelatedNotes(id:string, count = 5) {
+  const {data, error} = await await supabase.rpc("related_notes", {
+    target_id: id,
+    match_count: count
+  });
+
+  if (error) {
+    console.error("Related notes error:", error);
+    return [];
+  }
+  return data;
 }
