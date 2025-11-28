@@ -45,18 +45,6 @@ export default function HelpPage() {
     },
   ];
 
-  const handleSendMessage = () => {
-    if (!email.trim() || !message.trim()) {
-      Alert.alert("Error", "Please fill in both email and message");
-      return;
-    }
-
-    // In a real app, you'd send this to your backend
-    Alert.alert("Success", "Your message has been sent! We'll get back to you soon.");
-    setEmail("");
-    setMessage("");
-  };
-
   const openEmail = () => {
     Linking.openURL("mailto:support@braindump.app?subject=Help Request");
   };
