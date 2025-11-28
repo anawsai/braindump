@@ -52,7 +52,6 @@ export async function getAdvice(title: string, content: string) {
   });
   const data = await res.json();
   return data.advice
-<<<<<<< HEAD
 }
 
 import { supabase } from "../lib/supabase";
@@ -68,6 +67,3 @@ export async function getRelatedNotes(id:string, count = 5) {
   }
   return data;
 }
-=======
-}
->>>>>>> c8c04c8 (vector + embedding update to table in supabase)
