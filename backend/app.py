@@ -186,7 +186,8 @@ def get_advice():
         return jsonify({"error": "missing note text"}), 400
     advice = give_advice(note_text)
     return jsonify({"advice": advice})
-def get_notes_raw():
+
+def get_actual_notes():
     try:
         res = supabase.table("notes").select("*").execute()
         return res.data
@@ -198,7 +199,7 @@ def home():
     return jsonify({"message": "Backend is running"}), 200
 
 if __name__ == "__main__":
-    embed_cluster_notes(get_notes_raw)
+    # embed_cluster_notes(get_notes_raw)
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5001)))
 
 
