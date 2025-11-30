@@ -102,7 +102,7 @@ export default function EditProfile() {
     >
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push("/settings")} style={styles.headerLeft} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Ionicons name="close" size={38} color="black" />
         </TouchableOpacity>
 
@@ -191,21 +191,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 24,
     paddingTop: 40,
+    alignItems: "center",
   },
 
   /* HEADER */
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     marginBottom: 25,
+    height: 60,
+    position: "relative",
+    width: "100%",
+    flexDirection: "row",
+  },
+  headerLeft: {
+    width: 60,
+    height: 60,
+    alignItems: "flex-start",
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    position: "absolute",
-    left: 0,
-    right: 0,
     textAlign: "center",
   },
 
