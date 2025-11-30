@@ -91,7 +91,7 @@ export default function EditProfile() {
   );
 }
 
-/* ========================= STYLES ========================= */
+/* STYLES */
 
 const styles = StyleSheet.create({
   container: {
