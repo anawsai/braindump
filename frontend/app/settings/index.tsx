@@ -92,7 +92,11 @@ export default function SettingsScreen() {
 
       {/* Account */}
       <Text style={styles.sectionTitle}>Account</Text>
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push("/edit-profile")}
+        activeOpacity={0.7}
+      >
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
             {profileInitials || "JJ"}
@@ -106,7 +110,7 @@ export default function SettingsScreen() {
             {profileEmail || "jeffreyjones@gmail.com"}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {/* Privacy / Appearance */}
       <Text style={styles.sectionTitle}>Privacy/ Appearance</Text>

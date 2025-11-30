@@ -7,10 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
-<<<<<<< HEAD
-=======
   Alert,
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
   Pressable,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -18,12 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { fetchNotes, addNote, deleteNote } from "../../lib/api";
 import { useLoading } from '../../context/LoadingContext';
 
-<<<<<<< HEAD
-function NoteCard({ item, openMenuId, setOpenMenuId }: any) {
-  const router = useRouter();
-
-  // Hover states
-=======
 function timeAgo(timestamp?: string) {
   if (!timestamp) return "";
 
@@ -51,53 +42,12 @@ function NoteCard({
   onDelete: (id?: string) => void;
 }) {
   const router = useRouter();
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
   const [editHover, setEditHover] = useState(false);
   const [deleteHover, setDeleteHover] = useState(false);
 
   const isOpen = openMenuId === item.id;
 
   return (
-<<<<<<< HEAD
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.circleCheckbox} />
-        <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
-
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setOpenMenuId(isOpen ? null : item.id)}
-        >
-          <Ionicons name="ellipsis-vertical" size={18} color="#333" />
-        </TouchableOpacity>
-
-        {isOpen && (
-          <View style={styles.dropdown}>
-            {/* EDIT */}
-            <Pressable
-              style={({ hovered }) => [styles.dropdownItem, hovered && styles.dropdownItemHover]}
-              onPress={() => {
-                setOpenMenuId(null);
-                router.push(`/edit-notes/edit?id=${item.id}`);
-              }}
-            >
-              {({ hovered }) => (
-                <Text style={[styles.dropdownText, hovered && styles.dropdownTextHover]}>Edit</Text>
-              )}
-            </Pressable>
-
-            {/* DELETE */}
-            <Pressable
-              style={({ hovered }) => [styles.dropdownItem, hovered && styles.dropdownItemHover]}
-              onPress={() => {
-                setOpenMenuId(null);
-                router.push(`/delete-note/delete?id=${item.id}`);
-              }}
-            >
-              {({ hovered }) => (
-                <Text style={[styles.dropdownText, hovered && styles.dropdownTextHover]}>Delete</Text>
-              )}
-=======
     <TouchableOpacity
       onPress={() => router.push({ pathname: "/note-detail/[id]", params: { id: item.id } })}
       activeOpacity={0.7}
@@ -165,30 +115,13 @@ function NoteCard({
               }}
             >
               <Text>Delete</Text>
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
             </Pressable>
           </View>
         )}
       </View>
-<<<<<<< HEAD
-
-      <View style={styles.cardBody}>
-        <Text style={styles.cardContent}>{item.content}</Text>
-      </View>
-
-      <View style={styles.cardFooter}>
-        <Text style={styles.timestamp}>5 mins ago</Text>
-      </View>
-    </View>
-  );
-}
-
-type Note = { id?: string; title?: string; content?: string };
-=======
     </TouchableOpacity>
   );
 }
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
 
 export default function Dump() {
   const router = useRouter();
@@ -315,10 +248,7 @@ export default function Dump() {
               item={item}
               openMenuId={openMenuId}
               setOpenMenuId={setOpenMenuId}
-<<<<<<< HEAD
-=======
               onDelete={handleDelete}
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
             />
           )}
         />

@@ -77,27 +77,16 @@ export default function DeleteNote() {
 
       {/* Buttons */}
       <View style={styles.buttonRow}>
-<<<<<<< HEAD
-        <TouchableOpacity 
-          style={styles.keepButton} 
-=======
         <TouchableOpacity
           style={styles.keepButton}
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
           onPress={handleKeepIt}
           disabled={deleting}
         >
           <Text style={styles.keepButtonText}>Keep it!</Text>
         </TouchableOpacity>
-<<<<<<< HEAD
-        
-        <TouchableOpacity 
-          style={[styles.deleteButton, deleting && styles.deleteButtonDisabled]} 
-=======
 
         <TouchableOpacity
           style={[styles.deleteButton, deleting && styles.deleteButtonDisabled]}
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
           onPress={handleDelete}
           disabled={deleting}
         >
@@ -114,13 +103,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFB052',
-<<<<<<< HEAD
-    paddingHorizontal: 40,
-    paddingVertical: 60,
-=======
     paddingHorizontal: 16,
     paddingVertical: 16,
->>>>>>> 44444eca6991fdff35ef62645a9344745764ff21
     alignItems: 'center',
   },
   iconContainer: {
