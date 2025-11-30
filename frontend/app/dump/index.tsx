@@ -1,5 +1,5 @@
 // Dump page (rename it later)
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,10 +11,17 @@ import {
   Alert,
 } from "react-native";
 import { addNote } from "../../lib/api";
+import { useLoading } from '../../context/LoadingContext';
 
 export default function Notes() {
   const [noteText, setNoteText] = useState("");
   const [saving, setSaving] = useState(false);
+  const loading = useLoading();
+  const [prompt, setPrompt] = useState("What's on your mind today>");
+
+  useEffect(() => {
+    setPrompt(getRandomPrompt());
+  }, []);
 
   async function saveNote() {
     if (!noteText.trim()) {
@@ -23,6 +30,7 @@ export default function Notes() {
     }
     try {
       setSaving(true);
+      loading.start('Saving...');
       console.log("POST /notes via Flask");
       const row = await addNote('Untitled', noteText); // (title, content)
       console.log("Saved row:", row);
@@ -33,6 +41,7 @@ export default function Notes() {
       Alert.alert('Error', e.message);
     } finally {
       setSaving(false);
+      loading.stop();
     }
   }
   
@@ -42,9 +51,31 @@ export default function Notes() {
     await saveNote();
   }
 
+  const prompts: string[] = [
+    "What's on your mind today?",
+    "Are there any tasks you need to accomplish?",
+    "What's are some goals you have for the week?",
+    "What do you need to get off your chest?",
+    "Is there something you've been procrastinating on?",
+    "What makes you feel overwhelmed?",
+    "What's the most creative thing you've done recently?",
+    "Any idea is worth jotting down. What's yours?",
+    "What are you grateful for today?",
+    "What's a challenge you're facing right now?",
+    "Did something good happen recently?",
+  ]
+
+  function getRandomPrompt(): string {
+      const idx: number = Math.floor(Math.random() * prompts.length);
+      return prompts[idx];
+  }
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, (loading.active || saving) && styles.dimmed]}>
       <StatusBar barStyle="dark-content" />
+
+      {/* Loading screen overlay (visible during initial load or saving) */}
+      {/* Global loader is rendered by LoadingProvider at the root. */}
 
       {/* Header with avatar */}
       <View style={styles.header}>
@@ -60,11 +91,11 @@ export default function Notes() {
           source={require('../../assets/mascot.png')} 
           style={styles.mascotImage}
         />
-        <Text style={styles.promptText}>What makes you feel overwhelmed?</Text>
+        <Text style={styles.promptText}>{prompt}</Text>
       </View>
 
       {/* Text input area */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, (loading.active || saving) && styles.dimmed]}>
         <TextInput
           placeholder="What's on your mind? Ideas, tasks, random thoughts, anything...."
           placeholderTextColor="#999"
@@ -72,6 +103,7 @@ export default function Notes() {
           value={noteText}
           onChangeText={setNoteText}
           style={styles.textInput}
+          editable={!loading.active}
         />
       </View>
 
@@ -80,7 +112,7 @@ export default function Notes() {
         <TouchableOpacity 
           style={styles.button}
           onPress={saveNote}
-          disabled={saving}
+          disabled={saving || loading.active}
         >
           <Text style={styles.buttonText}>
             {saving ? 'Saving...' : 'Save'}
@@ -89,7 +121,7 @@ export default function Notes() {
         <TouchableOpacity 
           style={styles.button}
           onPress={saveAndOrganize}
-          disabled={saving}
+          disabled={saving || loading.active}
         >
           <Text style={styles.buttonText}>
             {saving ? 'Saving...' : 'Save & Organize'}
@@ -148,6 +180,9 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#F5F5F5",
     marginBottom: 24,
+  },
+  dimmed: {
+    opacity: 0.5,
   },
   textInput: {
     flex: 1,

@@ -26,7 +26,7 @@ export async function fetchNoteById(id: string) {
 // update a note by ID (calls PUT /notes/:id)
 export async function updateNote(
   id: string,
-  updates: { title?: string; content?: string }
+  updates: { title?: string; content?: string; category?: string}
 ) {
   const res = await fetch(`${API}/notes/${id}`, {
     method: "PUT",

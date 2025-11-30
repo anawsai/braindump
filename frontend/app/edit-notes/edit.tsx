@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,81 @@ import {
   StatusBar,
   Modal,
   FlatList,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { addNote, fetchNoteById, updateNote } from "../../lib/api";
 
 const CATEGORIES = ["Health", "Work", "Personal", "Ideas", "Tasks", "Learning"];
 
 export default function EditNote() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const isEditing = !!id;
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Health");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoadingNote] = useState(isEditing);
+
+  useEffect(() => {
+    if (!isEditing) return;
+
+    async function loadNote() {
+      try {
+        setLoadingNote(true);
+        const note = await fetchNoteById(String(id));
+        setTitle(note.title || "");
+        setContent(note.content || "");
+        if (note.category) setCategory(note.category);
+      } catch (e: any) {
+        console.error("Failed to load note", e);
+        Alert.alert("Error", e.message || "Failed to load note");
+      } finally {
+        setLoadingNote(false);
+      }
+    }
+
+    loadNote();
+  }, [id, isEditing]);
+
+  async function handleSave() {
+    if (!title.trim() || !content.trim()) {
+      Alert.alert('Error', 'Please fill in both title and content');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (isEditing) {
+      await updateNote(String(id), {
+          title: title.trim(),
+          content: content.trim(),
+          category: category,
+        });
+      } else {
+        await addNote(title.trim(), content.trim());
+        Alert.alert("Success", "Note created successfully");}
+
+        setTitle("");
+        setContent("");
+        setCategory("Health");
+        router.replace('/notes');
+    } catch (e: any) {
+      console.error("Failed to save note", e);
+      Alert.alert("Error", e.message || "Failed to save note");
+    } finally {
+      setSaving(false);
+    }
+  }
+  async function handleOrganize() {
+    // For now, organize just saves the note
+    await handleSave();
+  }
 
   return (
     <View style={styles.container}>
@@ -30,10 +93,8 @@ export default function EditNote() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="close" size={28} color="#000000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Note</Text>
-        <TouchableOpacity>
-          <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Edit Note</Text>
+        <View style={{ width: 50 }} />
       </View>
 
       {/* Title Section */}
@@ -74,11 +135,19 @@ export default function EditNote() {
       {/* Bottom Buttons */}
       <View style={styles.bottomSection}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.saveButton}>
-            <Text style={styles.buttonText}>Save</Text>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.organizeButton}>
-            <Text style={styles.buttonText}>Organize</Text>
+          <TouchableOpacity
+            style={styles.organizeButton}
+            onPress={handleOrganize}
+            disabled={saving}
+          >
+            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Organize'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -135,8 +204,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
   },

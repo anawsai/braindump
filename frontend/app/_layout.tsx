@@ -1,16 +1,35 @@
 import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { LoadingProvider } from '../context/LoadingContext';
 import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
+import { fetchNotes } from '../lib/api';
+import {Ionicons} from "@expo/vector-icons";
 
-function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void> }) {
+function Sidebar({
+  collapsed,
+  onNavigate,
+  onSignOut,
+  noteCount,
+  profileName,
+  profileEmail,
+  profileInitials,
+}: {
+  collapsed: boolean;
+  onNavigate: (path: string) => void;
+  onSignOut: () => Promise<void>;
+  noteCount: number;
+  profileName: string;
+  profileEmail: string;
+  profileInitials: string;
+}) {
   if (collapsed) return null;
-  
+
   return (
     <View style={styles.sidebar}>
       <View style={styles.mascotSection}>
-        <Image 
-          source={require('../assets/mascot.png')} 
+        <Image
+          source={require('../assets/mascot.png')}
           style={styles.mascotImage}
         />
       </View>
@@ -20,26 +39,23 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
       <View style={styles.profileSection}>
         <View style={styles.profileRow}>
           <View style={styles.profileCircle}>
-            <Text style={styles.profileInitials}>JJ</Text>
+            <Text style={styles.profileInitials}>{profileInitials}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Jeffrey Jones</Text>
-            <Text style={styles.profileEmail}>jeffreyjones@gmail.com</Text>
+            <Text style={styles.profileName}>{profileName}</Text>
+            <Text style={styles.profileEmail}>{profileEmail}</Text>
           </View>
         </View>
-        
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Image source={require('../assets/23.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>23</Text>
+
+        <View style={styles.statsWrapper}>
+          <View style={styles.statItem}>
+            <Ionicons name="document-text" size={23} color="#000" />
+            <Text style={styles.statText}>{noteCount}</Text>
           </View>
-          <View style={styles.stat}>
-            <Image source={require('../assets/checkmark.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>5</Text>
-          </View>
-          <View style={styles.stat}>
-            <Image source={require('../assets/person.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>8</Text>
+
+          <View style={styles.statItem}>
+            <Ionicons name="checkmark-circle" size={23} color="#000" />
+            <Text style={styles.statText}>5</Text>
           </View>
         </View>
       </View>
@@ -48,29 +64,39 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
         <Pressable style={styles.navButton} onPress={() => onNavigate('/dump')}>
           <Text style={styles.navButtonText}>Dump</Text>
         </Pressable>
-        
-        <Pressable style={[styles.navButton, styles.navButtonActive]} onPress={() => onNavigate('/notes')}>
-          <Image source={require('../assets/notes.png')} style={styles.navButtonIconImage} />
+
+        <Pressable
+          style={[styles.navButton, styles.navButtonActive]}
+          onPress={() => onNavigate('/notes')}
+        >
+          <Ionicons name="journal" size={25} color="#000" style={styles.navButtonIcon} />
           <Text style={styles.navButtonText}>Notes</Text>
         </Pressable>
-        
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/review')}>
+
+
+
+        <Pressable
+          style={styles.navButton}
+          onPress={() => onNavigate('/review')}
+        >
           <Text style={styles.navButtonText}>Review</Text>
-        </Pressable>
-        
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/teams')}>
-          <Text style={styles.navButtonText}>Teams</Text>
         </Pressable>
       </View>
 
       <View style={styles.dividerLine} />
 
       <View style={[styles.quickActions, { marginTop: 18 }]}>
-        <Pressable style={styles.settingsButton} onPress={() => onNavigate('/settings')}>
+        <Pressable
+          style={styles.settingsButton}
+          onPress={() => onNavigate('/settings')}
+        >
           <Text style={styles.navButtonText}>Settings</Text>
         </Pressable>
-        
-        <Pressable style={styles.settingsButton} onPress={() => onNavigate('/help')}>
+
+        <Pressable
+          style={styles.settingsButton}
+          onPress={() => onNavigate('/help')}
+        >
           <Text style={styles.navButtonText}>Help & Support</Text>
         </Pressable>
       </View>
@@ -89,7 +115,7 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
             }
           }}
         >
-          <Image source={require('../assets/signout.png')} style={styles.signOutIconImage} />
+          <Ionicons name="log-out-outline" size={28} color="#000" style={styles.navButtonIcon} />
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </View>
@@ -101,29 +127,82 @@ export default function RootLayout() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [noteCount, setNoteCount] = useState(0);
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileInitials, setProfileInitials] = useState('');
+
+  function applySessionUser(session: any | null) {
+  if (!session || !session.user) {
+    setProfileName('');
+    setProfileEmail('');
+    setProfileInitials('');
+    return;
+  }
+
+  const user = session.user;
+
+  // Adjust these keys if you used a different field when signing up
+  const fullName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.user_metadata?.username ||
+    (user.email ? user.email.split('@')[0] : 'User');
+
+  const email = user.email ?? '';
+
+  // Make initials like "RJ" from "Rachel Jung"
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part: string) => part[0]?.toUpperCase())
+    .join('') || 'U';
+
+  setProfileName(fullName);
+  setProfileEmail(email);
+  setProfileInitials(initials);
+}
+
+
+  async function loadNoteCount() {
+    try {
+      const notes = await fetchNotes();
+      setNoteCount(notes.length);
+    } catch (error: any) {
+      console.error('Error loading note count:', error?.message ?? error);
+    }
+  }
 
   useEffect(() => {
-    // check auth when the app loads
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setShowMenu(true);
+        applySessionUser(session);
         router.replace('/home');
+        await loadNoteCount();
       } else {
         setShowMenu(false);
         router.replace('/login');
+        setNoteCount(0);
       }
     });
 
-    // check for sign-in / sign-out
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setShowMenu(true);
-        router.replace('/home');
-      } else {
-        setShowMenu(false);
-        router.replace('/login');
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session) {
+          setShowMenu(true);
+          applySessionUser(session);
+          router.replace('/home');
+          await loadNoteCount();
+        } else {
+          setShowMenu(false);
+          applySessionUser(null);
+          router.replace('/login');
+          setNoteCount(0);
+        }
       }
-    });
+    );
 
     return () => sub.subscription.unsubscribe();
   }, [router]);
@@ -132,37 +211,54 @@ export default function RootLayout() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     router.replace('/login');
+    setNoteCount(0);
   }
 
   function handleNavigate(path: string) {
     router.push(path);
+    setCollapsed(true);
   }
 
   return (
-    <View style={styles.container}>
-      {showMenu && (<Sidebar collapsed={collapsed} onNavigate={handleNavigate} onSignOut={handleSignOut} />)}
-      <View style={styles.content}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => setCollapsed((s) => !s)} style={styles.menuButton}>
-            {showMenu && <Text style={{ fontSize: 20 }}>{collapsed ? '☰' : '☰'}</Text>}
-          </Pressable>
+    <LoadingProvider>
+      <View style={styles.container}>
+        {showMenu && (
+          <Sidebar
+            collapsed={collapsed}
+            onNavigate={handleNavigate}
+            onSignOut={handleSignOut}
+            noteCount={noteCount}
+            profileName={profileName}
+            profileEmail={profileEmail}
+            profileInitials={profileInitials}
+          />
+        )}
+        <View style={styles.content}>
+          <View style={styles.headerRow}>
+            <Pressable
+              onPress={() => setCollapsed((s) => !s)}
+              style={styles.menuButton}
+            >
+              {showMenu && <Text style={{ fontSize: 30 }}>{'☰'}</Text>}
+            </Pressable>
+          </View>
+          <Slot />
         </View>
-        <Slot />
       </View>
-    </View>
+    </LoadingProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    flexDirection: 'row', 
-    backgroundColor: '#ffffff',
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
     padding: 0,
   },
 
-  sidebar: { 
-    width: 320, 
+  sidebar: {
+    width: 320,
     paddingVertical: 12,
     paddingHorizontal: 20,
     backgroundColor: '#FFB052',
@@ -175,8 +271,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 
-  sidebarCollapsed: { 
-    display: 'none'
+  sidebarCollapsed: {
+    display: 'none',
   },
 
   mascotSection: {
@@ -197,11 +293,12 @@ const styles = StyleSheet.create({
     marginHorizontal: -20,
     alignSelf: 'stretch',
   },
-  
-  profileSection: { 
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
+
+  profileSection: {
+  paddingVertical: 15,
+  paddingHorizontal: 15,
+  minHeight: 120,
+},
 
   profileRow: {
     flexDirection: 'row',
@@ -210,18 +307,21 @@ const styles = StyleSheet.create({
   },
 
   profileCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 85,
+    height: 85,
+    borderRadius: 50,
     backgroundColor: '#FF8D05',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    position: 'relative',
+    bottom: -10,
+    left: -10,
   },
 
   profileInitials: {
     fontSize: 20,
-    fontWeight: 700,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 
@@ -229,54 +329,44 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  profileName: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: '#000000', 
+  profileName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
     marginBottom: 6,
   },
 
-  profileEmail: { 
-    fontSize: 13, 
+  profileEmail: {
+    fontSize: 13,
     color: '#000000',
     textDecorationLine: 'underline',
   },
 
-  statsRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'flex-start',
-    marginTop: 8,
+  statsWrapper: {
+    position: "absolute",
+    right: 65,
+    bottom: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
   },
 
-  stat: {
-    flexDirection: 'row', 
-    alignItems: 'center',
-    marginRight: 18,
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 
-  statIcon: { 
-    fontSize: 18,
-    marginRight: 6,
-  },
-
-
-  statIconImage: {
-    width: 20,
-    height: 20,
-    marginRight: 8,
-    resizeMode: 'contain',
-  },
-
-  statNumber: { 
-    fontSize: 16, 
-    fontWeight: '600',
-    color: '#000000',
+  statText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#000",
   },
 
   navSection: {
+    alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 12,
-    marginTop: 28,
+    marginTop: 30,
   },
 
   navButton: {
@@ -289,32 +379,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#000000',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     marginBottom: 22,
     height: 44,
   },
 
   navButtonIcon: {
     position: 'absolute',
-    left: 12,
-    top: 4,
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#000000',
-    color: '#fff',
-    textAlign: 'center',
-    lineHeight: 36,
-    fontSize: 18,
-  },
-
-  navButtonIconImage: {
-    position: 'absolute',
-    left: 12,
-    top: 6,             
-    width: 28,
-    height: 28,
-    resizeMode: 'contain',
+    left: 16,
   },
 
   navButtonText: {
@@ -333,17 +405,16 @@ const styles = StyleSheet.create({
   },
 
   bottomSection: {
-    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 60,
-    marginTop: 0,
+    alignItems: 'center',
   },
 
   quickActions: {
     paddingHorizontal: 16,
-    paddingTop: 14,         
+    paddingTop: 14,
+    alignItems: 'center',
   },
-
 
   settingsButton: {
     backgroundColor: '#FFFFFF',
@@ -353,10 +424,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     alignItems: 'center',
-    width: '85%',
+    width: '90%',
     marginBottom: 22,
     height: 44,
-    justifyContent: 'center', 
+    justifyContent: 'center',
+    flexDirection: 'row',
   },
 
   signOutButton: {
@@ -365,7 +437,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FF8D05',
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#000000',
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -374,32 +446,32 @@ const styles = StyleSheet.create({
   },
 
   signOutIcon: {
-    fontSize: 24,
+    fontSize: 70,
     marginRight: 10,
   },
 
   signOutIconImage: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
+    width: 30,
+    height: 30,
+    marginRight: 15,
     resizeMode: 'contain',
   },
 
   signOutText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#000000',
   },
 
-  content: { 
-    flex: 1, 
-    backgroundColor: '#ffffff',
+  content: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
     marginLeft: 16,
     padding: 18,
   },
 
-  headerRow: { 
-    height: 52, 
+  headerRow: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -408,7 +480,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e5e5',
   },
 
-  menuButton: { 
-    padding: 8, 
+  menuButton: {
+    padding: 8,
   },
 });
