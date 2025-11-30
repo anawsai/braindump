@@ -17,6 +17,7 @@ CORS(app)
 @app.get("/health")
 def health():
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     return jsonify({"ok": True})
 
 @app.get("/notes/")
@@ -24,6 +25,15 @@ def health():
     return jsonify({"ok": True}), 200
 
 @app.get("/notes")
+=======
+    return jsonify({"ok": True}), 200
+
+@app.get("/notes")
+=======
+    return jsonify({"ok": True}), 200
+
+@app.get("/notes")
+>>>>>>> Stashed changes
 >>>>>>> Stashed changes
 def get_notes():
     data = supabase.table("notes").select("*").execute()
@@ -65,13 +75,30 @@ def update_note(note_id: int):
     content = data.get("content")
 
     updates = {}
+<<<<<<< Updated upstream
     if title is not None:
         updates["title"] = title
     if content is not None:
         updates["content"] = content
+=======
+    if "title" in data:   updates["title"]   = (data["title"] or "").strip()
+    if "content" in data: updates["content"] = (data["content"] or "").strip()
+    if "category" in data: updates["category"] = (data["category"] or "").strip()
+    if not updates:
+        return jsonify({"error": "No fields to update"}), 400
+    try:
+        res = supabase.table("notes").update(updates, returning="representation").eq("id", note_id).execute()
+        if not res.data:
+            return jsonify({"error": "Note not found"}), 404
+        return jsonify(res.data[0]), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+>>>>>>> Stashed changes
 
     response = supabase.table("notes").update(updates).eq("id", note_id).execute()
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
     
     return jsonify({"message": f"TODO: update note with id {note_id}"})
@@ -88,6 +115,8 @@ def delete_note(note_id: int):
     
     return jsonify({"message": f"TODO: delete note with id {note_id}"})
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 if __name__ == "__main__":

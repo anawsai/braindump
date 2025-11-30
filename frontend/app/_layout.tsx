@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { View, Text, Pressable, Alert, StyleSheet } from 'react-native';
 
+<<<<<<< Updated upstream
 function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onNavigate: (path: string) => void; onSignOut: () => Promise<void> }) {
 <<<<<<< Updated upstream
   return (
@@ -18,6 +19,8 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
         <Text style={styles.linkText}>Notes</Text>
       </Pressable>
 =======
+=======
+>>>>>>> Stashed changes
   if (collapsed) return null;
   
   return (
@@ -88,7 +91,6 @@ function Sidebar({ collapsed, onNavigate, onSignOut }: { collapsed: boolean; onN
           <Text style={styles.navButtonText}>Help & Support</Text>
         </Pressable>
       </View>
->>>>>>> Stashed changes
 
       <View style={{ flex: 1 }} />
 
@@ -165,6 +167,7 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+<<<<<<< Updated upstream
   container: { 
     flex: 1, 
 <<<<<<< Updated upstream
@@ -176,6 +179,11 @@ const styles = StyleSheet.create({
     padding: 16, 
 =======
     flexDirection: 'row', 
+=======
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+>>>>>>> Stashed changes
     backgroundColor: '#ffffff',
     padding: 0,
   },
@@ -192,7 +200,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 6,
->>>>>>> Stashed changes
   },
 
   sidebarCollapsed: { 
@@ -423,6 +430,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
 
+<<<<<<< Updated upstream
   headerRow: { 
     height: 52, 
     flexDirection: 'row',
@@ -431,6 +439,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e5e5',
+=======
+  profileSection: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+>>>>>>> Stashed changes
   },
 
   menuButton: { 
