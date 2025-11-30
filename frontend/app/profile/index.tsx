@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-// IMPORT YOUR CUSTOM IMAGES
 const profileBrain = require("../../assets/profile-brain.png");
 const profilePeople = require("../../assets/profile-people.png");
 
@@ -106,7 +105,7 @@ export default function Profile() {
   );
 }
 
-/* ------------------  STYLES  ------------------ */
+/* STYLES */
 
 const theme = {
   bg: "#fff",

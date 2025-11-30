@@ -29,11 +29,11 @@ export default function RelatedNotes() {
         <Text style={styles.foundText}>Found 3 related thoughts!</Text>
 
         <Image
-          source={require("../../assets/mascot.png")} // ← replace with your actual asset
+          source={require("../../assets/mascot.png")} 
           style={styles.mascot}
         />
 
-        {/* NOTE CARDS (STATIC EXAMPLE FOR NOW) */}
+        {/* NOTE CARDS */}
         {Array.from({ length: 3 }).map((_, idx) => (
           <View key={idx} style={styles.noteCard}>
             <Text style={styles.noteTitle}>Note Title</Text>
@@ -49,7 +49,7 @@ export default function RelatedNotes() {
   );
 }
 
-/* ---------------------- STYLES ---------------------- */
+/* STYLES */
 
 const styles = StyleSheet.create({
   container: {
