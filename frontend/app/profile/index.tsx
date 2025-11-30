@@ -117,7 +117,7 @@ export default function Profile(){
 
       {/* Streak Section */}
       <View style={styles.streakSection}>
-        <Ionicons name="flame" size={75} color="#f28c40" />
+        <Ionicons name="flame" size={75} color="#FF8D05" />
         <Text style={styles.streakNumber}>3</Text>
         <Text style={styles.streakText}>day streak</Text>
       </View>
@@ -130,7 +130,7 @@ export default function Profile(){
             <Ionicons
               name="flame"
               size={40}
-              color={i < 3 ? "#f28c40" : "#e5d7c4"}
+              color={i < 3 ? "#FF8D05" : "#e5d7c4"}
             />
           </View>
         ))}
@@ -171,8 +171,8 @@ export default function Profile(){
 const theme = {
   bg: "#fff",
   outerBox: "#FFE6C8",
-  innerBox: "#f28c40",
-  accent: "#f28c40",
+  innerBox: "#FF8D05",
+  accent: "#FF8D05",
 };
 
 const styles = StyleSheet.create({
