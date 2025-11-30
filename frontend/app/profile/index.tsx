@@ -1,10 +1,76 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import {useEffect, useState} from "react";
+import { supabase } from "../../lib/supabase";
+import React from "react";
+import { fetchNotes } from "../../lib/api";
 
 const profileBrain = require("../../assets/profile-brain.png");
 const profilePeople = require("../../assets/profile-people.png");
 
-export default function Profile() {
+export default function Profile(){
+  const router = useRouter();
+
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileInitials, setProfileInitials] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [noteCount, setNoteCount] = useState(0);
+
+  // Helper: extract name/email/initials from Supabase user
+  function applySessionUser(session: any | null) {
+    if (!session || !session.user) {
+      setProfileName("");
+      setProfileEmail("");
+      setProfileInitials("");
+      return;
+    }
+
+    const user = session.user;
+
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.user_metadata?.username ||
+      (user.email ? user.email.split("@")[0] : "User");
+
+    const email = user.email ?? "";
+
+    const initials =
+      fullName
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part: string) => part[0]?.toUpperCase())
+        .join("") || "U";
+
+    setProfileName(fullName);
+    setProfileEmail(email);
+    setProfileInitials(initials);
+  }
+
+  useEffect(() => {
+    // fetch current session user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      applySessionUser(session);
+    });
+
+    fetchNotes()
+      .then((notes) => setNoteCount(notes.length))
+      .catch((err) => console.error("Failed to fetch notes:", err))
+
+    // listen for auth changes
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      applySessionUser(session);
+    });
+
+    return () => {
+      sub?.subscription.unsubscribe();
+    };
+  }, []);
+
+
   return (
     <ScrollView
       contentContainerStyle={styles.scrollContainer}
@@ -13,41 +79,36 @@ export default function Profile() {
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.leftHeaderGroup}>
-          <TouchableOpacity>
-            <Ionicons name="chevron-back" size={28} color="black" />
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={35} color="black" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Review</Text>
         </View>
-        <Ionicons name="ellipsis-horizontal" size={30} color="black" />
       </View>
 
       {/* Profile Circle */}
       <View style={styles.centerSection}>
         <View style={styles.profileCircle}>
-          <Text style={styles.profileInitials}>PW</Text>
+          <Text style={styles.profileInitials}>{profileInitials}</Text>
         </View>
-        <Text style={styles.profileName}>Jeffrey Jones</Text>
-        <Text style={styles.profileUsername}>jjisthebest243</Text>
+        <Text style={styles.profileName}>{profileName}</Text>
+        <Text style={styles.profileUsername}>{profileEmail}</Text>
       </View>
 
       {/* Journey Section */}
-      <View style={styles.sectionBox}>
+      <View style={styles.journeyBox}>
         <Text style={styles.sectionTitle}>Your Brain Dump Journey</Text>
 
         <View style={styles.statsRow}>
 
           {/* LEFT BOX — Brain */}
           <View style={styles.statCard}>
-            <Image source={profileBrain} style={styles.statIcon} />
-            <Text style={styles.statNumber}>47</Text>
+            <Ionicons name="trash" size={50} color="#000" />
+            <Text style={styles.statNumber}>{noteCount}</Text>
           </View>
-
-          {/* MIDDLE BOX — empty box */}
-          <View style={styles.statCard} />
 
           {/* RIGHT BOX — People */}
           <View style={styles.statCard}>
-            <Image source={profilePeople} style={styles.statIcon} />
+            <Ionicons name="checkmark-circle" size={50} color="#000"/>
             <Text style={styles.statNumber}>5</Text>
           </View>
 
@@ -56,7 +117,7 @@ export default function Profile() {
 
       {/* Streak Section */}
       <View style={styles.streakSection}>
-        <Ionicons name="flame" size={70} color="#f28c40" />
+        <Ionicons name="flame" size={75} color="#f28c40" />
         <Text style={styles.streakNumber}>3</Text>
         <Text style={styles.streakText}>day streak</Text>
       </View>
@@ -68,7 +129,7 @@ export default function Profile() {
             <Text style={styles.dayLabel}>{day}</Text>
             <Ionicons
               name="flame"
-              size={24}
+              size={40}
               color={i < 3 ? "#f28c40" : "#e5d7c4"}
             />
           </View>
@@ -76,8 +137,8 @@ export default function Profile() {
       </View>
 
       {/* Achievements */}
-      <View style={styles.sectionBox}>
-        <View style={styles.rowBetween}>
+      <View style={styles.achievementsBox}>
+        <View style={styles.achievementHeader}>
           <Text style={styles.sectionTitle}>Achievements</Text>
           <TouchableOpacity>
             <Text style={styles.viewAll}>View all</Text>
@@ -86,18 +147,18 @@ export default function Profile() {
 
         <View style={styles.achievementsRow}>
           <View style={styles.achievementCard}>
-            <Ionicons name="download" size={32} color="#fff" />
+            <Ionicons name="download" size={35} color="#000" />
             <Text style={styles.achievementText}>First Dump</Text>
           </View>
 
           <View style={styles.achievementCard}>
-            <Ionicons name="flame" size={32} color="#fff" />
+            <Ionicons name="flame" size={35} color="#000" />
             <Text style={styles.achievementText}>Week Straight</Text>
           </View>
 
           <View style={styles.achievementCard}>
-            <Ionicons name="people" size={32} color="#fff" />
-            <Text style={styles.achievementText}>Team Player</Text>
+            <Ionicons name="checkmark" size={35} color="#000" />
+            <Text style={styles.achievementText}>Task Complete</Text>
           </View>
         </View>
       </View>
@@ -110,7 +171,7 @@ export default function Profile() {
 const theme = {
   bg: "#fff",
   outerBox: "#FFE6C8",
-  innerBox: "#A35900",
+  innerBox: "#f28c40",
   accent: "#f28c40",
 };
 
@@ -169,66 +230,82 @@ const styles = StyleSheet.create({
   },
 
   /* Sections */
-  sectionBox: {
+  journeyBox: {
     backgroundColor: theme.outerBox,
     padding: 15,
     borderRadius: 14,
     marginBottom: 25,
+    width: 500,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 10,
+    textAlign: 'center',
   },
 
   /* Stats */
   statsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 25,
+    width: "100%",
+    marginTop: 10,
   },
   statCard: {
     backgroundColor: theme.innerBox,
-    width: "30%",
-    height: 90,
-    borderRadius: 10,
+    width: 200,
+    height: 120,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 8,
+    marginTop: 10,
   },
   statIcon: {
-    width: 40,
-    height: 40,
+    marginTop: 10,
+    width: 45,
+    height: 45,
     resizeMode: "contain",
   },
   statNumber: {
-    marginTop: 6,
     fontSize: 20,
     fontWeight: "600",
-    color: "#fff",
+    color: "#000",
   },
 
   /* Streak */
   streakSection: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 13,
+    width: "60%",
+    alignSelf: "center",
   },
   streakNumber: {
     fontSize: 40,
     fontWeight: "700",
-    marginTop: 10,
   },
   streakText: {
     color: "#444",
-    marginTop: -6,
   },
 
   /* Week */
   weekContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     backgroundColor: theme.outerBox,
     padding: 15,
     borderRadius: 14,
     marginBottom: 25,
+    width: "43%",
+    alignSelf: "center",
+    gap: 35,
   },
   dayItem: {
     alignItems: "center",
@@ -239,32 +316,51 @@ const styles = StyleSheet.create({
   },
 
   /* Achievements */
-  achievementsRow: {
+    achievementsBox: {
+    backgroundColor: theme.outerBox,
+    padding: 15,
+    borderRadius: 14,
+    marginBottom: 25,
+    width: 650,
+    alignSelf: 'center',
+  },
+  achievementHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  achievementsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 10,
+    gap: 20,
+    alignItems: "center",
   },
   achievementCard: {
     backgroundColor: theme.innerBox,
-    width: "30%",
+    width: 160,
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
+    paddingHorizontal: 10,
   },
   achievementText: {
     marginTop: 6,
     fontSize: 13,
-    fontWeight: "500",
-    color: "#fff",
+    fontWeight: "600",
+    color: "#000",
   },
 
   rowBetween: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
   },
   viewAll: {
     color: "#555",
     fontWeight: "500",
+    fontSize: 14,
+    textAlign: "right",
   },
 });
