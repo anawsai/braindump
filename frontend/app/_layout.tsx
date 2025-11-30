@@ -25,7 +25,6 @@ function Sidebar({
 }) {
   if (collapsed) return null;
 
-<<<<<<< Updated upstream
   return (
     <View style={styles.sidebar}>
       <View style={styles.mascotSection}>
@@ -36,7 +35,7 @@ function Sidebar({
       </View>
 
       <View style={styles.dividerLine} />
-
+    
     <Pressable
   style={styles.profileSection}
   onPress={() => onNavigate('profile')}
@@ -96,72 +95,6 @@ function Sidebar({
         >
           <Text style={styles.navButtonText}>Settings</Text>
         </Pressable>
-=======
-  if (collapsed) return null;
-
-  return (
-    <View style={styles.sidebar}>
-      <View style={styles.mascotSection}>
-        <Image
-          source={require('../assets/mascot.png')}
-          style={styles.mascotImage}
-        />
-      </View>
-
-      <View style={styles.dividerLine} />
-
-      <View style={styles.profileSection}>
-        <View style={styles.profileRow}>
-          <View style={styles.profileCircle}>
-            <Text style={styles.profileInitials}>JJ</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Jeffrey Jones</Text>
-            <Text style={styles.profileEmail}>jeffreyjones@gmail.com</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Image source={require('../assets/23.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>23</Text>
-          </View>
-          <View style={styles.stat}>
-            <Image source={require('../assets/checkmark.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>5</Text>
-          </View>
-          <View style={styles.stat}>
-            <Image source={require('../assets/person.png')} style={styles.statIconImage} />
-            <Text style={styles.statNumber}>8</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.navSection}>
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/dump')}>
-          <Text style={styles.navButtonText}>Dump</Text>
-        </Pressable>
-
-        <Pressable style={[styles.navButton, styles.navButtonActive]} onPress={() => onNavigate('/notes')}>
-          <Image source={require('../assets/notes.png')} style={styles.navButtonIconImage} />
-          <Text style={styles.navButtonText}>Notes</Text>
-        </Pressable>
-
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/review')}>
-          <Text style={styles.navButtonText}>Review</Text>
-        </Pressable>
-
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/teams')}>
-          <Text style={styles.navButtonText}>Teams</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.dividerLine} />
-
-      <View style={[styles.quickActions, { marginTop: 18 }]}>
-        <Pressable style={styles.settingsButton} onPress={() => onNavigate('/settings')}>
-          <Text style={styles.navButtonText}>Settings</Text>
-        </Pressable>
 
         <Pressable
           style={styles.settingsButton}
@@ -170,12 +103,6 @@ function Sidebar({
           <Text style={styles.navButtonText}>Help & Support</Text>
         </Pressable>
       </View>
-
-        <Pressable style={styles.settingsButton} onPress={() => onNavigate('/help')}>
-          <Text style={styles.navButtonText}>Help & Support</Text>
-        </Pressable>
-      </View>
->>>>>>> Stashed changes
 
       <View style={{ flex: 1 }} />
 
@@ -328,7 +255,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-<<<<<<< Updated upstream
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     padding: 0,
@@ -346,25 +272,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 6,
-=======
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    padding: 0,
-  },
-
-  sidebar: {
-    width: 320,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFB052',
-    borderRightWidth: 1,
-    borderRightColor: '#000000',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 6,
->>>>>>> Stashed changes
   },
 
   sidebarCollapsed: {
@@ -565,7 +472,6 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     padding: 18,
   },
-<<<<<<< Updated upstream
 
   headerRow: {
     height: 52,
@@ -575,16 +481,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e5e5',
-=======
-
-  profileSection: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
->>>>>>> Stashed changes
   },
 
   menuButton: {
     padding: 8,
   },
-<<<<<<< Updated upstream
 });
