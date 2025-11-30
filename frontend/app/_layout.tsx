@@ -35,30 +35,33 @@ function Sidebar({
       </View>
 
       <View style={styles.dividerLine} />
+    
+    <Pressable
+  style={styles.profileSection}
+  onPress={() => onNavigate('profile')}
+>
+  <View style={styles.profileRow}>
+    <View style={styles.profileCircle}>
+      <Text style={styles.profileInitials}>{profileInitials}</Text>
+    </View>
+    <View style={styles.profileInfo}>
+      <Text style={styles.profileName}>{profileName}</Text>
+      <Text style={styles.profileEmail}>{profileEmail}</Text>
+    </View>
+  </View>
 
-      <View style={styles.profileSection}>
-        <View style={styles.profileRow}>
-          <View style={styles.profileCircle}>
-            <Text style={styles.profileInitials}>{profileInitials}</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{profileName}</Text>
-            <Text style={styles.profileEmail}>{profileEmail}</Text>
-          </View>
-        </View>
+  <View style={styles.statsWrapper}>
+    <View style={styles.statItem}>
+      <Ionicons name="document-text" size={23} color="#000" />
+      <Text style={styles.statText}>{noteCount}</Text>
+    </View>
 
-        <View style={styles.statsWrapper}>
-          <View style={styles.statItem}>
-            <Ionicons name="document-text" size={23} color="#000" />
-            <Text style={styles.statText}>{noteCount}</Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <Ionicons name="checkmark-circle" size={23} color="#000" />
-            <Text style={styles.statText}>5</Text>
-          </View>
-        </View>
-      </View>
+    <View style={styles.statItem}>
+      <Ionicons name="checkmark-circle" size={23} color="#000" />
+      <Text style={styles.statText}>5</Text>
+    </View>
+  </View>
+</Pressable>
 
       <View style={styles.navSection}>
         <Pressable style={styles.navButton} onPress={() => onNavigate('/dump')}>
