@@ -210,13 +210,6 @@ def get_actual_notes():
     except Exception as e:
         return []
 
-def get_actual_notes():
-    try:
-        res = supabase.table("notes").select("*").execute()
-        return res.data
-    except Exception as e:
-        return []
-
 def generate_insights(note_text:str):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
