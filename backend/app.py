@@ -42,7 +42,14 @@ def create_note():
     if not new_note["title"] and not new_note["content"]:
         return jsonify({"error": "Empty note"}), 400
     try:
-        res = supabase.table("notes").insert(new_note, returning="representation").execute()
+        embedding = embed_cluster_notes(new_note["content"])
+        insights = generate_insights(new_note["content"])
+        insert_data = {
+            **new_note,
+            "embedding": embedding,
+            "insights": insights
+        }
+        res = supabase.table("notes").insert(insert_data).execute()
         return jsonify(res.data[0] if res.data else {}), 201
     except Exception as e:
         import traceback; traceback.print_exc()
@@ -68,7 +75,11 @@ def update_note(note_id: str):
     if not updates:
         return jsonify({"error": "No fields to update"}), 400
     try:
-        res = supabase.table("notes").update(updates, returning="representation").eq("id", note_id).execute()
+        if "content" in updates:
+            new_update = updates["content"]
+            updates["embedding"] = embed_cluster_notes(new_update)
+            updates["insights"] = generate_insights(new_update)
+        res = supabase.table("notes").update(updates).eq("id", note_id).execute()
         if not res.data:
             return jsonify({"error": "Note not found"}), 404
         return jsonify(res.data[0]), 200
@@ -147,7 +158,7 @@ def is_meaningful(text: str) -> bool:
     return True
 
 
-def give_advice(note_text: str):
+def give_advice(note_text: str): #most probably for recommendations on review page
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -193,6 +204,33 @@ def get_actual_notes():
         return res.data
     except Exception as e:
         return []
+
+def generate_insights(note_text:str):
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": """
+        You are a smart personal assistant that gathers insights from notes.
+        Given the following note, produce 2-4 short insights that summarize the key ideas and 
+        anything important that the user might have submitted. 
+        Note : {note_text}
+        - Keep advice short and clear.
+        - Never just say insights for saying them, they must be meaningful.
+        - Output as bullet points. Avoid repeating the original text.
+        }
+        """
+            }
+        ],
+        max_tokens=200
+    )
+    return response.choices[0].message.content
+
+def save_insights(note_id: str, note: str):
+    insights = generate_insights(note)
+    res = supabase.table("notes").insert({"text": note,"insights": insights }).execute()
+    return res
 
 @app.get("/")
 def home():
