@@ -131,7 +131,7 @@ export default function NoteDetail() {
           <Text style={styles.actionText}>Create Task</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => router.push({pathname: "/related-notes", params: { id }})}>
           <Ionicons name="git-network-outline" size={24} color="#000000" />
           <Text style={styles.actionText}>Related Notes</Text>
         </TouchableOpacity>
