@@ -1,4 +1,4 @@
-const API = "http://localhost:8081";
+const API = "http://localhost:5001";
 
 export async function fetchNotes() {
   const res = await fetch(`${API}/notes`);
@@ -44,15 +44,26 @@ export async function deleteNote(id: string) {
   return res.json();
 }
 
-// export async function sendResetEmail(id: email) {
-//   const {data, error} = await supabase.auth.resetPasswordForEmail(email, { 
-//     redirectTo: "https://your-app.com/reset-password" //replace with actual link
-//   })
-//   if (error) {
-//     console.error(error);
-//     alert("something went wrong");
-//   }
-//   else {
-//     alert("Password reset link sent.");
-//   }
-// }
+export async function getAdvice(title: string, content: string) {
+  const res = await fetch(`${API}/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, content }),
+  });
+  const data = await res.json();
+  return data.advice
+}
+
+import { supabase } from "../lib/supabase";
+export async function getRelatedNotes(id:string, count = 5) {
+  const {data, error} = await await supabase.rpc("related_notes", {
+    target_id: id,
+    match_count: count
+  });
+
+  if (error) {
+    console.error("Related notes error:", error);
+    return [];
+  }
+  return data;
+}
