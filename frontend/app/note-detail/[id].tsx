@@ -131,22 +131,11 @@ export default function NoteDetail() {
           <Text style={styles.actionText}>Create Task</Text>
         </TouchableOpacity>
 
-<<<<<<< HEAD
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push("/related-notes")}
-        >
-=======
         <TouchableOpacity style={styles.actionButton}>
->>>>>>> 98ae17c (new relatedNotes)
           <Ionicons name="git-network-outline" size={24} color="#000000" />
           <Text style={styles.actionText}>Related Notes</Text>
         </TouchableOpacity>
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 98ae17c (new relatedNotes)
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => router.push({ pathname: "/delete-note/delete", params: { id } })}
