@@ -1,4 +1,4 @@
-const API = "http://localhost:5001";
+const API = "http://localhost:8081";
 
 export async function fetchNotes() {
   const res = await fetch(`${API}/notes`);
@@ -43,3 +43,16 @@ export async function deleteNote(id: string) {
   if (!res.ok) throw new Error("Failed to delete note");
   return res.json();
 }
+
+// export async function sendResetEmail(id: email) {
+//   const {data, error} = await supabase.auth.resetPasswordForEmail(email, { 
+//     redirectTo: "https://your-app.com/reset-password" //replace with actual link
+//   })
+//   if (error) {
+//     console.error(error);
+//     alert("something went wrong");
+//   }
+//   else {
+//     alert("Password reset link sent.");
+//   }
+// }

@@ -36,7 +36,7 @@ def create_note():
     if not new_note["title"] and not new_note["content"]:
         return jsonify({"error": "Empty note"}), 400
     try:
-        res = supabase.table("notes").insert(new_note, returning="representation").execute()
+        res = supabase.table("notes").insert(new_note, returning="representation").execute() # type: ignore
         return jsonify(res.data[0] if res.data else {}), 201
     except Exception as e:
         import traceback; traceback.print_exc()
@@ -63,7 +63,7 @@ def update_note(note_id: str):
     if not updates:
         return jsonify({"error": "No fields to update"}), 400
     try:
-        res = supabase.table("notes").update(updates, returning="representation").eq("id", note_id).execute()
+        res = supabase.table("notes").update(updates, returning="representation").eq("id", note_id).execute() # type: ignore
         if not res.data:
             return jsonify({"error": "Note not found"}), 404
         return jsonify(res.data[0]), 200
@@ -74,7 +74,7 @@ def update_note(note_id: str):
 @app.delete("/notes/<note_id>")
 def delete_note(note_id: str):
     try:
-        res = supabase.table("notes").delete(returning="representation").eq("id", note_id).execute()
+        res = supabase.table("notes").delete(returning="representation").eq("id", note_id).execute() # type: ignore
         if not res.data:
             return jsonify({"error": "Note not found"}), 404
         return jsonify({"success": True, "message": f"Note {note_id} deleted"}), 200
