@@ -1,4 +1,4 @@
-const API = "http://localhost:8081";
+const API = "http://localhost:5001";
 
 export async function fetchNotes() {
   const res = await fetch(`${API}/notes`);
