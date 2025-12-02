@@ -81,7 +81,7 @@ export default function EditProfile() {
         return;
       }
 
-      Alert.alert("Profile updated", "Your changes have been saved.");
+      Alert.alert("Profile updated", "Your changes have been saved."); router.push("/settings");
     } catch (err: any) {
       Alert.alert("Error", err?.message ?? "Something went wrong.");
     }
@@ -105,9 +105,11 @@ export default function EditProfile() {
         <TouchableOpacity onPress={() => router.push("/settings")} style={styles.headerLeft} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Ionicons name="close" size={38} color="black" />
         </TouchableOpacity>
-
         <Text style={styles.headerTitle}>Edit Profile</Text>
       </View>
+      <TouchableOpacity onPress={handleSave} style={styles.headerRight}>
+    <Text style={styles.saveText}>Save</Text>
+  </TouchableOpacity>
 
       {/* PROFILE PICTURE */}
       <View style={styles.profileCenter}>
@@ -191,7 +193,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 24,
     paddingTop: 40,
-    alignItems: "center",
   },
 
   /* HEADER */
@@ -207,12 +208,26 @@ const styles = StyleSheet.create({
   headerLeft: {
     width: 60,
     height: 60,
-    alignItems: "flex-start",
+    position: "absolute",
+    left: 0,
+  },
+    headerRight: {
+    width: 60,
+    height: 60,
+    position: "absolute",
+    right: 0,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
     textAlign: "center",
+  },
+  saveText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000000",
+    position: "absolute",
+    right: 0,
   },
 
   /* PROFILE SECTION */

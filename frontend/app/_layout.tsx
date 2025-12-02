@@ -6,6 +6,7 @@ import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
 import { fetchNotes } from '../lib/api';
 import {Ionicons} from "@expo/vector-icons";
 
+
 function Sidebar({
   collapsed,
   onNavigate,
@@ -35,7 +36,7 @@ function Sidebar({
       </View>
 
       <View style={styles.dividerLine} />
-    
+
     <Pressable
   style={styles.profileSection}
   onPress={() => onNavigate('profile')}
