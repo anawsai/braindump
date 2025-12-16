@@ -12,7 +12,6 @@ import { useRouter } from "expo-router";
 
 export default function ChangePassword() {
   const router = useRouter();
-
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -21,15 +20,10 @@ export default function ChangePassword() {
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={36} color="#000" />
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Ionicons name="chevron-back" size={24} color="black" />
         </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Change Password</Text>
-
-        <TouchableOpacity>
-          <Text style={styles.headerSave}>SAVE</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle} pointerEvents="none">Change Password</Text>
       </View>
 
       {/* Current Password */}
@@ -94,14 +88,18 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 35,
+    height: 44,
   },
 
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
   },
 
   headerSave: {
@@ -147,7 +145,7 @@ const styles = StyleSheet.create({
   },
 
   bottomSave: {
-    backgroundColor: "#F2A652",
+    backgroundColor: "#FFB052",
     paddingVertical: 16,
     justifyContent: "center",
     alignItems: "center",

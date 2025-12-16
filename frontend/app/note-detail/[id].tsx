@@ -7,6 +7,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Share,
+  Platform
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,6 +20,40 @@ export default function NoteDetail() {
 
   const [note, setNote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const handleShare = async () => {
+  if (!note) return;
+
+  const title = note.title || "Note";
+  const text = `${title}\n\n${note.content || ""}`;
+
+      if (Platform.OS === 'web') {
+        const nav: any = navigator;
+
+        if ((nav && typeof nav.share === 'function')) {
+          try {
+            await nav.share({
+              title,
+              text,
+            });
+          } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "Sharing failed.");
+          }
+        } else {
+          Alert.alert("Error", "Web Share API not supported in this browser.");
+        }
+      } else {
+        try {
+          await Share.share({
+            title,
+            message: text,
+          });
+        } catch (error) {
+          console.error(error);
+          Alert.alert("Error", "Sharing failed.");
+        }
+      }
+    };
 
   useEffect(() => {
     if (!id) return;
@@ -121,7 +157,7 @@ export default function NoteDetail() {
           <Text style={styles.actionText}>Edit</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
           <Ionicons name="share-outline" size={24} color="#000000" />
           <Text style={styles.actionText}>Share</Text>
         </TouchableOpacity>
