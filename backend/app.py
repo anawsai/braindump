@@ -18,7 +18,14 @@ SUPABASE_URL = os.getenv("SUPABASE_URL") or ""
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+if OPENAI_KEY:
+    client = OpenAI(api_key=OPENAI_KEY)
+    print(" OpenAI enabled")
+else:
+    client = None
+    print(" OpenAI disabled - no API key")
 
 app = Flask(__name__)
 CORS(app)
@@ -43,15 +50,39 @@ def create_note():
         "title": (body.get("title") or "").strip(),
         "content": (body.get("content") or "").strip(),
     }
+    
+    # Check if user wants AI to organize
+    should_organize = body.get("organize", False)
+    user_category = (body.get("category") or "").strip()
+    
     if not new_note["title"] and not new_note["content"]:
         return jsonify({"error": "Empty note"}), 400
+    
     try:
-        embedding = embed_cluster_notes(new_note["content"])
-        insights = generate_insights(new_note["content"])
+        # Create embedding (always do this - it's free/local)
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        embedding = model.encode(new_note["content"]).tolist()
+
+        # Only generate insights if organizing
+        if should_organize:
+            insights = generate_insights(new_note["content"])
+            # Generate title if empty or "Untitled"
+            if not new_note["title"] or new_note["title"] == "Untitled":
+                new_note["title"] = generate_title(new_note["content"])
+            # Always generate category in organize mode
+            category = generate_category(new_note["content"])
+        else:
+            # Regular save: no insights, use defaults
+            insights = None
+            if not new_note["title"]:
+                new_note["title"] = "Untitled"
+            category = user_category if user_category else "Personal"
+        
         insert_data = {
             **new_note,
             "embedding": embedding,
-            "insights": insights
+            "insights": insights,
+            "category": category
         }
         res = supabase.table("notes").insert(insert_data).execute()
         return jsonify(res.data[0] if res.data else {}), 201
@@ -76,14 +107,25 @@ def update_note(note_id: str):
     updates = {}
     if "title" in data:   updates["title"]   = (data["title"] or "").strip()
     if "content" in data: updates["content"] = (data["content"] or "").strip()
-    if "category" in data: updates["category"] = (data["category"] or "").strip() 
+    if "category" in data: updates["category"] = (data["category"] or "").strip()
+    
+    # Check if user wants to reorganize
+    should_organize = data.get("organize", False)
+    
     if not updates:
         return jsonify({"error": "No fields to update"}), 400
     try:
         if "content" in updates:
-            new_update = updates["content"]
-            updates["embedding"] = embed_cluster_notes(new_update)
-            updates["insights"] = generate_insights(new_update)
+            model = SentenceTransformer("all-MiniLM-L6-v2")
+            updates["embedding"] = model.encode(updates["content"]).tolist()
+            
+            # Only generate insights if organize mode
+            if should_organize:
+                updates["insights"] = generate_insights(updates["content"])
+                updates["title"] = generate_title(updates["content"])
+                updates["category"] = generate_category(updates["content"])
+            # If regular save with content change, don't regenerate insights
+        
         res = supabase.table("notes").update(updates).eq("id", note_id).execute()
         if not res.data:
             return jsonify({"error": "Note not found"}), 404
@@ -103,67 +145,25 @@ def delete_note(note_id: str):
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-def embed_cluster_notes(get_notes):
-    notes_data = get_notes()
-    notes = []
-
-    if isinstance(notes_data, tuple) and len(notes_data) == 2:
-        notes_data = notes_data[0]
-
-        # If response is a dict like {"data":[...]}
-    if isinstance(notes_data, dict) and "data" in notes_data:
-        notes_list = notes_data["data"]
-    else:
-        notes_list = notes_data
-
-    for item in notes_list:
-        text = item.get("content") or item.get("title") or ""
-        if text.strip() and is_meaningful(text):
-            notes.append({"id": item["id"], "text": text})
-    # notes = ["This is a great product!", "I love using this service."]
-    n_clusters: int = 10
-    model_name = "all-MiniLM-L6-v2"
-    model = SentenceTransformer(model_name)
-
-    texts = [n["text"] for n in notes]
-    embeddings = model.encode(texts, show_progress_bar=False)
-    embeddings_list = [emb.tolist() for emb in embeddings]
-
-    
-
-    for note, embed in zip(notes, embeddings_list): 
-        # supabase.table("notes").update({"embedding": embed}).eq("id", note["id"]).execute()
-        update_embed = supabase.table("notes").update({"embedding": embed}).eq("id", note["id"]).execute()
-        print("[EMBEDDING UPDATE]", note["id"], update_embed)
-
-    hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=2, min_samples=1, metric='euclidean')
-    labels = hdbscan_model.fit_predict(embeddings)
-    for note, label in zip(notes, labels):
-        supabase.table("notes").update({"cluster": int(label)}).eq("id", note["id"]).execute()
-
-    note_to_cluster = {notes[i]["ic"]: int(labels[i]) for i in range(len(notes))}
-    return note_to_cluster
-
-
 def is_meaningful(text: str) -> bool:
     """Filter out junk, super short, or repetitive notes."""
     if len(text.strip()) < 3:
         return False
 
     stop_words = set(stopwords.words('english'))
-    # Remove stop words and check if what's left has substance
     tokens = [t for t in re.findall(r"[a-zA-Z]+", text.lower()) if t not in stop_words]
     if len(tokens) == 0:
         return False
 
-    # Skip texts that are just repeated characters or nonsense like 'fffff'
     if re.fullmatch(r"(.)\1{2,}", text.strip().lower()):
         return False
 
     return True
 
-
-def give_advice(note_text: str): #most probably for recommendations on review page
+def give_advice(note_text: str):
+    if not client:
+        return {"error": "OpenAI not configured"}
+    
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -193,7 +193,7 @@ def give_advice(note_text: str): #most probably for recommendations on review pa
     except Exception as e:
         return {"error": str(e)}
 
-
+@app.post("/advice")
 def get_advice():
     data = request.get_json()
     note_text = data.get("text", "")
@@ -203,44 +203,102 @@ def get_advice():
     advice = give_advice(note_text)
     return jsonify({"advice": advice})
 
-def get_actual_notes():
+def generate_insights(note_text: str):
+    if not client:
+        return "OpenAI not configured"
+    
     try:
-        res = supabase.table("notes").select("*").execute()
-        return res.data
-    except Exception as e:
-        return []
-
-def generate_insights(note_text:str):
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": """
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """
         You are a smart personal assistant that gathers insights from notes.
         Given the following note, produce 2-4 short insights that summarize the key ideas and 
         anything important that the user might have submitted. 
-        Note : {note_text}
         - Keep advice short and clear.
         - Never just say insights for saying them, they must be meaningful.
         - Output as bullet points. Avoid repeating the original text.
-        }
         """
-            }
-        ],
-        max_tokens=200
-    )
-    return response.choices[0].message.content
+                },
+                {"role": "user", "content": f"Note: {note_text}"}
+            ],
+            max_tokens=200
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error generating insights: {e}")
+        return f"Error generating insights: {str(e)}"
+    
+def generate_category(note_text: str) -> str:
+    """Generate a category for the note using AI"""
+    if not client:
+        return "Personal"  # default fallback
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are a note categorization assistant.
+                    Given a note, classify it into ONE of these categories:
+                    - Health (fitness, diet, medical, wellness)
+                    - Work (career, projects, meetings, deadlines)
+                    - Personal (relationships, hobbies, home, family)
+                    - Ideas (creative thoughts, brainstorming, inspiration)
+                    - Tasks (to-dos, errands, action items)
+                    - Learning (education, studying, courses, skills)
 
-def save_insights(note_id: str, note: str):
-    insights = generate_insights(note)
-    res = supabase.table("notes").insert({"text": note,"insights": insights }).execute()
-    return res
+                    Respond with ONLY the category name, nothing else."""
+                },
+                {"role": "user", "content": f"Note: {note_text}"}
+            ],
+            max_tokens=10
+        )
+        category = response.choices[0].message.content.strip()
+        
+        # Validate it's one of our categories
+        valid_categories = ["Health", "Work", "Personal", "Ideas", "Tasks", "Learning"]
+        return category if category in valid_categories else "Personal"
+    except Exception as e:
+        print(f"Error generating category: {e}")
+        return "Personal"
+    
+def generate_title(note_text: str) -> str:
+    """Generate a short, descriptive title for the note"""
+    if not client:
+        return "Untitled"
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """You are a note title generator. 
+                    Create a short, descriptive title (3-6 words max) that captures the main idea of the note.
+                    Be specific and concise. Do not use quotes or punctuation at the end.
+                    Examples:
+                    - "Team Meeting Notes March 2024"
+                    - "Grocery List for Weekend"
+                    - "Ideas for Marketing Campaign"
+
+                    Respond with ONLY the title, nothing else."""
+                },
+                {"role": "user", "content": f"Note content: {note_text}"}
+            ],
+            max_tokens=20
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Error generating title: {e}")
+        return "Untitled"
 
 @app.get("/")
 def home():
     return jsonify({"message": "Backend is running"}), 200
 
 if __name__ == "__main__":
-    # embed_cluster_notes(get_notes_raw)
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5001)))
