@@ -51,27 +51,32 @@ export default function EditNote() {
   }, [id, isEditing]);
 
   async function handleSave() {
-    if (!title.trim() || !content.trim()) {
-      Alert.alert('Error', 'Please fill in both title and content');
+    if (!content.trim()) {
+      Alert.alert('Error', 'Please write some content');
       return;
     }
 
     setSaving(true);
     try {
       if (isEditing) {
-      await updateNote(String(id), {
-          title: title.trim(),
+        // Regular save - keep user's title and category, no AI organization
+        await updateNote(String(id), {
+          title: title.trim() || "Untitled",
           content: content.trim(),
           category: category,
+          organize: false
         });
+        Alert.alert("Success", "Note updated!");
       } else {
-        await addNote(title.trim(), content.trim());
-        Alert.alert("Success", "Note created successfully");}
-
-        setTitle("");
-        setContent("");
-        setCategory("Health");
-        router.replace('/notes');
+        // Regular save for new note
+        await addNote(title.trim() || "Untitled", content.trim(), category, false);
+        Alert.alert("Success", "Note created!");
+      }
+      
+      setTitle("");
+      setContent("");
+      setCategory("Health");
+      router.replace('/notes');
     } catch (e: any) {
       console.error("Failed to save note", e);
       Alert.alert("Error", e.message || "Failed to save note");
@@ -79,9 +84,38 @@ export default function EditNote() {
       setSaving(false);
     }
   }
+
   async function handleOrganize() {
-    // For now, organize just saves the note
-    await handleSave();
+    if (!content.trim()) {
+      Alert.alert('Error', 'Please write some content');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (isEditing) {
+        // Organize mode - AI generates title, category, and insights
+        await updateNote(String(id), {
+          content: content.trim(),
+          organize: true
+        });
+        Alert.alert("Success", "Note reorganized!");
+      } else {
+        // Organize mode for new note
+        await addNote(title.trim() || "Untitled", content.trim(), undefined, true);
+        Alert.alert("Success", "Note organized and created!");
+      }
+      
+      setTitle("");
+      setContent("");
+      setCategory("Health");
+      router.replace('/notes');
+    } catch (e: any) {
+      console.error("Failed to organize note", e);
+      Alert.alert("Error", e.message || "Failed to organize note");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -147,7 +181,7 @@ export default function EditNote() {
             onPress={handleOrganize}
             disabled={saving}
           >
-            <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Organize'}</Text>
+            <Text style={styles.buttonText}>{saving ? 'Organizing...' : 'Organize'}</Text>
           </TouchableOpacity>
         </View>
       </View>

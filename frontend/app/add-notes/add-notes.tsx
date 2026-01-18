@@ -25,14 +25,15 @@ export default function AddNote() {
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
-    if (!title.trim() || !content.trim()) {
-      Alert.alert("Error", "Please fill in both title and content");
+    if (!content.trim()) {
+      Alert.alert("Error", "Please write some content");
       return;
     }
 
     try {
       setSaving(true);
-      await addNote(title.trim(), content.trim(), category);
+      // Regular save - uses user's title and category, no AI organization
+      await addNote(title.trim() || "Untitled", content.trim(), category, false);
       Alert.alert("Success", "Note saved!");
       router.back();
     } catch (e: any) {
@@ -43,8 +44,22 @@ export default function AddNote() {
   }
 
   async function handleOrganize() {
-    // for now just save
-    await handleSave();
+    if (!content.trim()) {
+      Alert.alert("Error", "Please write some content");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      // Organize mode - AI generates title, category, and insights
+      await addNote(title.trim() || "Untitled", content.trim(), undefined, true);
+      Alert.alert("Success", "Note organized and saved!");
+      router.back();
+    } catch (e: any) {
+      Alert.alert("Error", e.message || "Failed to organize note");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -118,7 +133,7 @@ export default function AddNote() {
             disabled={saving}
           >
             <Text style={styles.buttonText}>
-              {saving ? "Saving..." : "Organize"}
+              {saving ? "Organizing..." : "Organize"}
             </Text>
           </TouchableOpacity>
         </View>
