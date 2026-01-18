@@ -31,13 +31,11 @@ export default function Notes() {
     try {
       setSaving(true);
       loading.start('Saving...');
-      console.log("POST /notes via Flask");
-      const row = await addNote('Untitled', noteText); // (title, content)
-      console.log("Saved row:", row);
+      // Regular save - no AI organization
+      await addNote('Untitled', noteText, undefined, false);
       Alert.alert('Success', 'Note saved!');
       setNoteText('');
     } catch (e:any) {
-      console.error("Save failed:", e);
       Alert.alert('Error', e.message);
     } finally {
       setSaving(false);
@@ -46,9 +44,23 @@ export default function Notes() {
   }
   
   async function saveAndOrganize() {
-    //for now, just save normally
-    //categorization logic later
-    await saveNote();
+    if (!noteText.trim()) {
+      Alert.alert('Error', 'Please write something before saving');
+      return;
+    }
+    try {
+      setSaving(true);
+      loading.start('Organizing...');
+      // Organize mode - AI generates title and category
+      await addNote('Untitled', noteText, undefined, true);
+      Alert.alert('Success', 'Note organized and saved!');
+      setNoteText('');
+    } catch (e:any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+      loading.stop();
+    }
   }
 
   const prompts: string[] = [

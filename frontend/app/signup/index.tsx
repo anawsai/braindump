@@ -42,20 +42,37 @@ export default function Signup() {
     }
     
     setLoading(true);
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    });
-    
-    if (error) {
-      Alert.alert('Signup Failed', error.message);
-    } else if (!session) {
-      Alert.alert('Success', 'Please check your inbox for email verification!');
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+      
+      if (error) {
+        Alert.alert('Signup Failed', error.message);
+        return;
+      }
+  
+      if (data.user && !data.session) {
+        Alert.alert(
+          'Check Your Email! ',
+          'We sent you a confirmation link. Please check your inbox and click the link to activate your account.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/login')
+            }
+          ]
+        );
+      } else if (data.session) {
+        Alert.alert('Success', 'Account created successfully!');
+        router.replace('/home');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Something went wrong');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

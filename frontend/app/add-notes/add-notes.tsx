@@ -32,7 +32,7 @@ export default function AddNote() {
 
     try {
       setSaving(true);
-      await addNote(title.trim(), content.trim());
+      await addNote(title.trim(), content.trim(), category);
       Alert.alert("Success", "Note saved!");
       router.back();
     } catch (e: any) {

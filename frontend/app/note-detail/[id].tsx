@@ -140,8 +140,7 @@ export default function NoteDetail() {
           <Text style={styles.insightsTitle}>Insights</Text>
           <View style={styles.insightsContent}>
             <Text style={styles.insightText}>
-              • this connects your "blah blah" roadmap{"\n"}
-              • suggested next steps: ...........
+              {note.insights || "No insights generated yet"}
             </Text>
           </View>
         </View>
