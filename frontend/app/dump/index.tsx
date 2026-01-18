@@ -86,17 +86,6 @@ export default function Notes() {
     <View style={[styles.container, (loading.active || saving) && styles.dimmed]}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Loading screen overlay (visible during initial load or saving) */}
-      {/* Global loader is rendered by LoadingProvider at the root. */}
-
-      {/* Header with avatar */}
-      <View style={styles.header}>
-        <View style={{ width: 28 }} />
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>Y</Text>
-        </View>
-      </View>
-
       {/* Mascot prompt */}
       <View style={styles.promptContainer}>
         <Image 
@@ -149,25 +138,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "white",
     padding: 16,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#FFB052",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+    paddingTop: 40, // Add some top padding since we removed the header
   },
   promptContainer: {
     alignItems: "center",
