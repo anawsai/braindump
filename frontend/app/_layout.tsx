@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { LoadingProvider } from '../context/LoadingContext';
 import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
-import { fetchNotes } from '../lib/api';
+import { fetchNotes, getUserStats } from '../lib/api';
 import {Ionicons} from "@expo/vector-icons";
 
 
@@ -12,6 +12,7 @@ function Sidebar({
   onNavigate,
   onSignOut,
   noteCount,
+  tasksCompleted,
   profileName,
   profileEmail,
   profileInitials,
@@ -20,6 +21,7 @@ function Sidebar({
   onNavigate: (path: string) => void;
   onSignOut: () => Promise<void>;
   noteCount: number;
+  tasksCompleted: number;
   profileName: string;
   profileEmail: string;
   profileInitials: string;
@@ -59,7 +61,7 @@ function Sidebar({
 
     <View style={styles.statItem}>
       <Ionicons name="checkmark-circle" size={23} color="#000" />
-      <Text style={styles.statText}>5</Text>
+      <Text style={styles.statText}>{tasksCompleted}</Text>
     </View>
   </View>
 </Pressable>
@@ -132,6 +134,7 @@ export default function RootLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [noteCount, setNoteCount] = useState(0);
+  const [tasksCompleted, setTasksCompleted] = useState(0);
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profileInitials, setProfileInitials] = useState('');
@@ -178,6 +181,15 @@ export default function RootLayout() {
     }
   }
 
+  async function loadUserStats(userId: string) {
+    try {
+      const stats = await getUserStats(userId);
+      setTasksCompleted(stats.tasks_completed || 0);
+    } catch (error: any) {
+      console.error('Error loading user stats:', error?.message ?? error);
+    }
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
@@ -185,10 +197,14 @@ export default function RootLayout() {
         applySessionUser(session);
         router.replace('/home');
         await loadNoteCount();
+        if (session.user?.id) {
+          await loadUserStats(session.user.id);
+        }
       } else {
         setShowMenu(false);
         router.replace('/login');
         setNoteCount(0);
+        setTasksCompleted(0);
       }
     });
 
@@ -199,11 +215,15 @@ export default function RootLayout() {
           applySessionUser(session);
           router.replace('/home');
           await loadNoteCount();
+          if (session.user?.id) {
+            await loadUserStats(session.user.id);
+          }
         } else {
           setShowMenu(false);
           applySessionUser(null);
           router.replace('/login');
           setNoteCount(0);
+          setTasksCompleted(0);
         }
       }
     );
@@ -216,6 +236,7 @@ export default function RootLayout() {
     if (error) throw error;
     router.replace('/login');
     setNoteCount(0);
+    setTasksCompleted(0);
   }
 
   function handleNavigate(path: string) {
@@ -232,6 +253,7 @@ export default function RootLayout() {
             onNavigate={handleNavigate}
             onSignOut={handleSignOut}
             noteCount={noteCount}
+            tasksCompleted={tasksCompleted}
             profileName={profileName}
             profileEmail={profileEmail}
             profileInitials={profileInitials}
