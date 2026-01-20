@@ -14,10 +14,14 @@ export async function addNote(
   category?: string,
   organize?: boolean
 ) {
+  // Get current user for activity tracking
+  const { data: { user } } = await supabase.auth.getUser();
+  const user_id = user?.id;
+
   const res = await fetch(`${API}/notes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, content, category, organize }),
+    body: JSON.stringify({ title, content, category, organize, user_id }),
   });
   if (!res.ok) throw new Error("Failed to create note");
   return res.json();
@@ -179,4 +183,23 @@ export function analyzeWeeklyNotes(notes: any[]) {
     themes,
     notes // Include the actual notes for deeper analysis
   };
+}
+
+// User Stats API calls
+export async function getUserStats(userId: string) {
+  const res = await fetch(`${API}/user/stats/${userId}`);
+  if (!res.ok) throw new Error("Failed to fetch user stats");
+  return res.json();
+}
+
+export async function getUserActivity(userId: string) {
+  const res = await fetch(`${API}/user/activity/${userId}`);
+  if (!res.ok) throw new Error("Failed to fetch user activity");
+  return res.json();
+}
+
+export async function getUserAchievements(userId: string) {
+  const res = await fetch(`${API}/user/achievements/${userId}`);
+  if (!res.ok) throw new Error("Failed to fetch user achievements");
+  return res.json();
 }

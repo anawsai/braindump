@@ -1,22 +1,48 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import React from "react";
-import { fetchNotes } from "../../lib/api";
+import { fetchNotes, getUserStats, getUserActivity, getUserAchievements } from "../../lib/api";
 
-const profileBrain = require("../../assets/profile-brain.png");
-const profilePeople = require("../../assets/profile-people.png");
+type UserStats = {
+  current_streak: number;
+  longest_streak: number;
+  total_dumps: number;
+  tasks_completed: number;
+};
 
-export default function Profile(){
+type DailyActivity = {
+  date: string;
+  dump_count: number;
+};
+
+type Achievement = {
+  type: string;
+  name: string;
+  icon: string;
+  unlocked: boolean;
+};
+
+export default function Profile() {
   const router = useRouter();
 
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileInitials, setProfileInitials] = useState("");
-  const [loading, setLoading] = useState(true);
   const [noteCount, setNoteCount] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Dynamic data state
+  const [userStats, setUserStats] = useState<UserStats>({
+    current_streak: 0,
+    longest_streak: 0,
+    total_dumps: 0,
+    tasks_completed: 0,
+  });
+  const [weeklyActivity, setWeeklyActivity] = useState<DailyActivity[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   // Helper: extract name/email/initials from Supabase user
   function applySessionUser(session: any | null) {
@@ -24,10 +50,12 @@ export default function Profile(){
       setProfileName("");
       setProfileEmail("");
       setProfileInitials("");
+      setUserId(null);
       return;
     }
 
     const user = session.user;
+    setUserId(user.id);
 
     const fullName =
       user.user_metadata?.full_name ||
@@ -50,26 +78,48 @@ export default function Profile(){
     setProfileInitials(initials);
   }
 
+  // Fetch user stats, activity, and achievements
+  async function loadUserData(uid: string) {
+    try {
+      const [stats, activity, achievementsData] = await Promise.all([
+        getUserStats(uid),
+        getUserActivity(uid),
+        getUserAchievements(uid),
+      ]);
+
+      setUserStats(stats);
+      setWeeklyActivity(activity);
+      setAchievements(achievementsData);
+    } catch (err) {
+      console.error("Failed to load user data:", err);
+    }
+  }
+
   useEffect(() => {
-    // fetch current session user
+    // Fetch current session user
     supabase.auth.getSession().then(({ data: { session } }) => {
       applySessionUser(session);
+      if (session?.user?.id) {
+        loadUserData(session.user.id);
+      }
     });
 
     fetchNotes()
       .then((notes) => setNoteCount(notes.length))
-      .catch((err) => console.error("Failed to fetch notes:", err))
+      .catch((err) => console.error("Failed to fetch notes:", err));
 
-    // listen for auth changes
+    // Listen for auth changes
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       applySessionUser(session);
+      if (session?.user?.id) {
+        loadUserData(session.user.id);
+      }
     });
 
     return () => {
       sub?.subscription.unsubscribe();
     };
   }, []);
-
 
   return (
     <ScrollView
@@ -99,44 +149,52 @@ export default function Profile(){
         <Text style={styles.sectionTitle}>Your Brain Dump Journey</Text>
 
         <View style={styles.statsRow}>
-
-          {/* LEFT BOX — Brain */}
+          {/* LEFT BOX — Total Dumps */}
           <View style={styles.statCard}>
             <Ionicons name="trash" size={50} color="#000" />
-            <Text style={styles.statNumber}>{noteCount}</Text>
+            <Text style={styles.statNumber}>{userStats.total_dumps || noteCount}</Text>
           </View>
 
-          {/* RIGHT BOX — People */}
+          {/* RIGHT BOX — Tasks Completed */}
           <View style={styles.statCard}>
-            <Ionicons name="checkmark-circle" size={50} color="#000"/>
-            <Text style={styles.statNumber}>5</Text>
+            <Ionicons name="checkmark-circle" size={50} color="#000" />
+            <Text style={styles.statNumber}>{userStats.tasks_completed}</Text>
           </View>
-
         </View>
       </View>
 
       {/* Streak Section */}
       <View style={styles.streakSection}>
         <Ionicons name="flame" size={75} color="#FF8D05" />
-        <Text style={styles.streakNumber}>3</Text>
+        <Text style={styles.streakNumber}>{userStats.current_streak}</Text>
         <Text style={styles.streakText}>day streak</Text>
       </View>
 
-      {/* Week Row */}
+      {/* Week Row - Dynamic from weeklyActivity */}
       <View style={styles.weekContainer}>
-        {["SUN", "MON", "TUE", "THU", "FRI", "SAT"].map((day, i) => (
-          <View key={i} style={styles.dayItem}>
-            <Text style={styles.dayLabel}>{day}</Text>
-            <Ionicons
-              name="flame"
-              size={40}
-              color={i < 3 ? "#FF8D05" : "#e5d7c4"}
-            />
-          </View>
-        ))}
+        {weeklyActivity.length > 0 ? (
+          weeklyActivity.map((day, i) => (
+            <View key={i} style={styles.dayItem}>
+              <Text style={styles.dayLabel}>{day.date.toUpperCase()}</Text>
+              <Ionicons
+                name="flame"
+                size={40}
+                color={day.dump_count > 0 ? "#FF8D05" : "#e5d7c4"}
+              />
+            </View>
+          ))
+        ) : (
+          // Fallback if no activity data yet
+          ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day, i) => (
+            <View key={i} style={styles.dayItem}>
+              <Text style={styles.dayLabel}>{day}</Text>
+              <Ionicons name="flame" size={40} color="#e5d7c4" />
+            </View>
+          ))
+        )}
       </View>
 
-      {/* Achievements */}
+      {/* Achievements - Dynamic */}
       <View style={styles.achievementsBox}>
         <View style={styles.achievementHeader}>
           <Text style={styles.sectionTitle}>Achievements</Text>
@@ -146,20 +204,47 @@ export default function Profile(){
         </View>
 
         <View style={styles.achievementsRow}>
-          <View style={styles.achievementCard}>
-            <Ionicons name="download" size={35} color="#000" />
-            <Text style={styles.achievementText}>First Dump</Text>
-          </View>
-
-          <View style={styles.achievementCard}>
-            <Ionicons name="flame" size={35} color="#000" />
-            <Text style={styles.achievementText}>Week Straight</Text>
-          </View>
-
-          <View style={styles.achievementCard}>
-            <Ionicons name="checkmark" size={35} color="#000" />
-            <Text style={styles.achievementText}>Task Complete</Text>
-          </View>
+          {achievements.length > 0 ? (
+            achievements.map((achievement, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.achievementCard,
+                  !achievement.unlocked && styles.achievementLocked,
+                ]}
+              >
+                <Ionicons
+                  name={achievement.icon as any}
+                  size={35}
+                  color={achievement.unlocked ? "#000" : "#999"}
+                />
+                <Text
+                  style={[
+                    styles.achievementText,
+                    !achievement.unlocked && styles.achievementTextLocked,
+                  ]}
+                >
+                  {achievement.name}
+                </Text>
+              </View>
+            ))
+          ) : (
+            // Fallback achievements
+            <>
+              <View style={[styles.achievementCard, styles.achievementLocked]}>
+                <Ionicons name="download" size={35} color="#999" />
+                <Text style={[styles.achievementText, styles.achievementTextLocked]}>First Dump</Text>
+              </View>
+              <View style={[styles.achievementCard, styles.achievementLocked]}>
+                <Ionicons name="flame" size={35} color="#999" />
+                <Text style={[styles.achievementText, styles.achievementTextLocked]}>Week Straight</Text>
+              </View>
+              <View style={[styles.achievementCard, styles.achievementLocked]}>
+                <Ionicons name="checkmark" size={35} color="#999" />
+                <Text style={[styles.achievementText, styles.achievementTextLocked]}>Task Complete</Text>
+              </View>
+            </>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -194,10 +279,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
   },
 
   /* Profile */
@@ -236,15 +317,15 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 25,
     width: 500,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   /* Stats */
@@ -267,12 +348,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
     marginTop: 10,
-  },
-  statIcon: {
-    marginTop: 10,
-    width: 45,
-    height: 45,
-    resizeMode: "contain",
   },
   statNumber: {
     fontSize: 20,
@@ -303,9 +378,10 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 14,
     marginBottom: 25,
-    width: "43%",
+    width: "60%",
     alignSelf: "center",
-    gap: 35,
+    gap: 20,
+    flexWrap: "wrap",
   },
   dayItem: {
     alignItems: "center",
@@ -316,13 +392,13 @@ const styles = StyleSheet.create({
   },
 
   /* Achievements */
-    achievementsBox: {
+  achievementsBox: {
     backgroundColor: theme.outerBox,
     padding: 15,
     borderRadius: 14,
     marginBottom: 25,
     width: 650,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   achievementHeader: {
     flexDirection: "row",
@@ -336,6 +412,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     gap: 20,
     alignItems: "center",
+    flexWrap: "wrap",
   },
   achievementCard: {
     backgroundColor: theme.innerBox,
@@ -345,17 +422,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 10,
   },
+  achievementLocked: {
+    backgroundColor: "#d9d9d9",
+    opacity: 0.7,
+  },
   achievementText: {
     marginTop: 6,
     fontSize: 13,
     fontWeight: "600",
     color: "#000",
   },
-
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+  achievementTextLocked: {
+    color: "#666",
   },
   viewAll: {
     color: "#555",

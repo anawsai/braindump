@@ -54,6 +54,7 @@ def create_note():
     # Check if user wants AI to organize
     should_organize = body.get("organize", False)
     user_category = (body.get("category") or "").strip()
+    user_id = body.get("user_id")  # Get user_id for tracking
     
     if not new_note["title"] and not new_note["content"]:
         return jsonify({"error": "Empty note"}), 400
@@ -85,6 +86,38 @@ def create_note():
             "category": category
         }
         res = supabase.table("notes").insert(insert_data).execute()
+        
+        # Track user activity if user_id provided
+        if user_id:
+            try:
+                from datetime import datetime
+                today = datetime.now().date().isoformat()
+                
+                # Update or insert daily activity
+                existing = supabase.table("daily_activity")\
+                    .select("*")\
+                    .eq("user_id", user_id)\
+                    .eq("activity_date", today)\
+                    .execute()
+                
+                if existing.data:
+                    # Increment count
+                    supabase.table("daily_activity")\
+                        .update({"dump_count": existing.data[0]["dump_count"] + 1})\
+                        .eq("id", existing.data[0]["id"])\
+                        .execute()
+                else:
+                    # Create new record
+                    supabase.table("daily_activity")\
+                        .insert({"user_id": user_id, "activity_date": today, "dump_count": 1})\
+                        .execute()
+                
+                # Update streak
+                supabase.rpc("update_user_streak", {"p_user_id": user_id}).execute()
+            except Exception as track_error:
+                # Don't fail the note creation if tracking fails
+                print(f"Activity tracking error: {track_error}")
+        
         return jsonify(res.data[0] if res.data else {}), 201
     except Exception as e:
         import traceback; traceback.print_exc()
@@ -295,6 +328,116 @@ def generate_title(note_text: str) -> str:
     except Exception as e:
         print(f"Error generating title: {e}")
         return "Untitled"
+
+# User Stats Endpoints
+@app.get("/user/stats/<user_id>")
+def get_user_stats(user_id: str):
+    """Get user statistics including streak, total dumps, etc."""
+    try:
+        # Get user stats - don't use .single() since it errors on 0 rows
+        stats_res = supabase.table("user_stats").select("*").eq("user_id", user_id).execute()
+        
+        # Check if user has stats already
+        if not stats_res.data or len(stats_res.data) == 0:
+            # Initialize stats if they don't exist
+            init_data = {
+                "user_id": user_id,
+                "current_streak": 0,
+                "longest_streak": 0,
+                "total_dumps": 0,
+                "tasks_completed": 0
+            }
+            stats_res = supabase.table("user_stats").insert(init_data).execute()
+            return jsonify(stats_res.data[0] if stats_res.data else init_data), 200
+        
+        # Return existing stats
+        return jsonify(stats_res.data[0]), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.get("/user/activity/<user_id>")
+def get_user_activity(user_id: str):
+    """Get user's daily activity for the past 7 days"""
+    try:
+        # Get activity for last 7 days
+        from datetime import datetime, timedelta
+        today = datetime.now().date()
+        week_ago = today - timedelta(days=6)
+        
+        activity_res = supabase.table("daily_activity")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .gte("activity_date", week_ago.isoformat())\
+            .lte("activity_date", today.isoformat())\
+            .execute()
+        
+        # Create a dict for the past 7 days
+        activity_by_date = {}
+        for i in range(7):
+            date = week_ago + timedelta(days=i)
+            activity_by_date[date.isoformat()] = {
+                "date": date,
+                "dump_count": 0
+            }
+        
+        # Fill in actual activity counts
+        for record in activity_res.data:
+            date_str = record['activity_date']
+            if date_str in activity_by_date:
+                activity_by_date[date_str]["dump_count"] = record['dump_count']
+        
+        # Convert to list ordered by date
+        activity_list = [
+            {
+                "date": info["date"].strftime("%a"),  # Day name (Mon, Tue, etc.)
+                "dump_count": info["dump_count"]
+            }
+            for date_str, info in sorted(activity_by_date.items())
+        ]
+        
+        return jsonify(activity_list), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.get("/user/achievements/<user_id>")
+def get_user_achievements(user_id: str):
+    """Get user's unlocked achievements"""
+    try:
+        achievements_res = supabase.table("user_achievements")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .execute()
+        
+        # Convert to a more usable format
+        unlocked = set(ach['achievement_type'] for ach in achievements_res.data)
+        
+        all_achievements = [
+            {
+                "type": "first_dump",
+                "name": "First Dump",
+                "icon": "download",
+                "unlocked": "first_dump" in unlocked
+            },
+            {
+                "type": "week_straight",
+                "name": "Week Straight", 
+                "icon": "flame",
+                "unlocked": "week_straight" in unlocked
+            },
+            {
+                "type": "task_complete",
+                "name": "Task Complete",
+                "icon": "checkmark",
+                "unlocked": "task_complete" in unlocked
+            }
+        ]
+        
+        return jsonify(all_achievements), 200
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @app.get("/")
 def home():
