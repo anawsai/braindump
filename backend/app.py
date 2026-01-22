@@ -178,6 +178,105 @@ def delete_note(note_id: str):
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.post("/notes/<note_id>/complete")
+def complete_task(note_id: str):
+    """Mark a task as completed and increment user's tasks_completed counter"""
+    try:
+        from datetime import datetime
+        
+        # Get the note first to verify it exists
+        note_res = supabase.table("notes").select("*").eq("id", note_id).single().execute()
+        if not note_res.data:
+            return jsonify({"error": "Note not found"}), 404
+        
+        note = note_res.data
+        if note.get("is_completed"):
+            return jsonify({"error": "Task already completed"}), 400
+        
+        # Mark task as completed
+        update_res = supabase.table("notes").update({
+            "is_completed": True,
+            "is_task": True,  # Ensure it's marked as a task
+            "completed_at": datetime.now().isoformat()
+        }).eq("id", note_id).execute()
+        
+        if not update_res.data:
+            return jsonify({"error": "Failed to update task"}), 500
+        
+        # Get user_id from the note to update their stats
+        user_id = note.get("user_id")
+        if user_id:
+            try:
+                # Get current stats
+                stats_res = supabase.table("user_stats").select("*").eq("user_id", user_id).execute()
+                
+                if stats_res.data and len(stats_res.data) > 0:
+                    # Increment tasks_completed
+                    current_count = stats_res.data[0].get("tasks_completed", 0)
+                    supabase.table("user_stats").update({
+                        "tasks_completed": current_count + 1
+                    }).eq("user_id", user_id).execute()
+                else:
+                    # Create stats if they don't exist
+                    supabase.table("user_stats").insert({
+                        "user_id": user_id,
+                        "tasks_completed": 1,
+                        "current_streak": 0,
+                        "longest_streak": 0,
+                        "total_dumps": 0
+                    }).execute()
+            except Exception as stats_error:
+                print(f"Error updating stats: {stats_error}")
+        
+        return jsonify(update_res.data[0]), 200
+        
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.post("/notes/<note_id>/uncomplete")
+def uncomplete_task(note_id: str):
+    """Mark a task as not completed and decrement user's tasks_completed counter"""
+    try:
+        # Get the note first
+        note_res = supabase.table("notes").select("*").eq("id", note_id).single().execute()
+        if not note_res.data:
+            return jsonify({"error": "Note not found"}), 404
+        
+        note = note_res.data
+        if not note.get("is_completed"):
+            return jsonify({"error": "Task is not completed"}), 400
+        
+        # Mark task as not completed
+        update_res = supabase.table("notes").update({
+            "is_completed": False,
+            "completed_at": None
+        }).eq("id", note_id).execute()
+        
+        if not update_res.data:
+            return jsonify({"error": "Failed to update task"}), 500
+        
+        # Decrement tasks_completed counter
+        user_id = note.get("user_id")
+        if user_id:
+            try:
+                stats_res = supabase.table("user_stats").select("*").eq("user_id", user_id).execute()
+                
+                if stats_res.data and len(stats_res.data) > 0:
+                    current_count = stats_res.data[0].get("tasks_completed", 0)
+                    new_count = max(0, current_count - 1)
+                    supabase.table("user_stats").update({
+                        "tasks_completed": new_count
+                    }).eq("user_id", user_id).execute()
+            except Exception as stats_error:
+                print(f"Error updating stats: {stats_error}")
+        
+        return jsonify(update_res.data[0]), 200
+        
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 def is_meaningful(text: str) -> bool:
     """Filter out junk, super short, or repetitive notes."""
     if len(text.strip()) < 3:

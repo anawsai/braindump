@@ -3,7 +3,14 @@ const API = "http://localhost:5001";
 import { supabase } from "./supabase";
 
 export async function fetchNotes() {
-  const res = await fetch(`${API}/notes`);
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user?.id) {
+    throw new Error("Not authenticated");
+  }
+  
+  const res = await fetch(`${API}/notes?user_id=${user.id}`);
   if (!res.ok) throw new Error("Failed to fetch notes");
   return res.json();
 }
@@ -17,6 +24,8 @@ export async function addNote(
   // Get current user for activity tracking
   const { data: { user } } = await supabase.auth.getUser();
   const user_id = user?.id;
+
+  console.log("Creating note with user_id:", user_id); // DEBUG
 
   const res = await fetch(`${API}/notes`, {
     method: "POST",
@@ -83,12 +92,18 @@ export async function getRelatedNotes(id:string, count = 5) {
   return data;
 }
 
-// Get notes from the last 7 days
 export async function getWeeklyNotes() {
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   
-  const res = await fetch(`${API}/notes`);
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user?.id) {
+    throw new Error("Not authenticated");
+  }
+  
+  const res = await fetch(`${API}/notes?user_id=${user.id}`);
   if (!res.ok) throw new Error("Failed to fetch notes");
   const allNotes = await res.json();
   
@@ -201,5 +216,25 @@ export async function getUserActivity(userId: string) {
 export async function getUserAchievements(userId: string) {
   const res = await fetch(`${API}/user/achievements/${userId}`);
   if (!res.ok) throw new Error("Failed to fetch user achievements");
+  return res.json();
+}
+
+// Mark a task as complete
+export async function completeTask(id: string) {
+  const res = await fetch(`${API}/notes/${id}/complete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Failed to complete task");
+  return res.json();
+}
+
+// Mark a task as not complete
+export async function uncompleteTask(id: string) {
+  const res = await fetch(`${API}/notes/${id}/uncomplete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Failed to uncomplete task");
   return res.json();
 }

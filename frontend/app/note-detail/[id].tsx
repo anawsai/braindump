@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { fetchNoteById } from "../../lib/api";
+import { fetchNoteById, completeTask, uncompleteTask } from "../../lib/api";
 
 export default function NoteDetail() {
   const router = useRouter();
@@ -161,9 +161,38 @@ export default function NoteDetail() {
           <Text style={styles.actionText}>Share</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="checkmark-circle-outline" size={24} color="#000000" />
-          <Text style={styles.actionText}>Create Task</Text>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={async () => {
+            try {
+              if (note.is_completed) {
+                // Uncomplete the task
+                await uncompleteTask(String(id));
+                Alert.alert("Success", "Task marked as incomplete");
+              } else {
+                // Complete the task
+                await completeTask(String(id));
+                Alert.alert("Success", "Task completed! 🎉");
+              }
+              // Reload the note to get updated status
+              const updatedNote = await fetchNoteById(String(id));
+              setNote(updatedNote);
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to update task");
+            }
+          }}
+        >
+          <Ionicons 
+            name={note.is_completed ? "checkmark-circle" : "checkmark-circle-outline"} 
+            size={24} 
+            color={note.is_completed ? "#4CAF50" : "#000000"} 
+          />
+          <Text style={[
+            styles.actionText, 
+            note.is_completed && { color: "#4CAF50" }
+          ]}>
+            {note.is_completed ? "Completed ✓" : "Mark Complete"}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton} onPress={() => router.push({pathname: "/related-notes", params: { id }})}>

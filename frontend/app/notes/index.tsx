@@ -28,7 +28,15 @@ function timeAgo(timestamp?: string) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-type Note = { id?: string; title?: string; content?: string; created_at?: string };
+type Note = { 
+  id?: string; 
+  title?: string; 
+  content?: string; 
+  created_at?: string;
+  is_completed?: boolean;
+  is_task?: boolean;
+  completed_at?: string;
+};
 
 function NoteCard({
   item,
@@ -54,8 +62,20 @@ function NoteCard({
     >
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={styles.circleCheckbox} />
-          <Text style={styles.cardTitle}>{item.title || "Note Title"}</Text>
+          <View style={[
+              styles.circleCheckbox,
+              item.is_completed && styles.circleCheckboxCompleted
+            ]}>
+              {item.is_completed && (
+                <Ionicons name="checkmark" size={14} color="#4CAF50" />
+              )}
+            </View>
+            <Text style={[
+              styles.cardTitle,
+              item.is_completed && styles.cardTitleCompleted
+            ]}>
+              {item.title || "Note Title"}
+            </Text>
           <TouchableOpacity
             style={styles.menuButton}
             onPress={(e) => {
@@ -381,6 +401,15 @@ dropdownItemHover: {
     width: "100%",
     textAlign: "left",
     paddingVertical: 0,
+  },
+
+  circleCheckboxCompleted: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+  },
+  cardTitleCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#666',
   },
 });
 
