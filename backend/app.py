@@ -37,7 +37,11 @@ def health():
 @app.get("/notes")
 def get_notes():
     try:
-        res = supabase.table("notes").select("*").order("created_at", desc=True).execute()
+        user_id = request.args.get("user_id")
+        if not user_id:
+            return jsonify({"error": "user_id required"}), 400
+        
+        res = supabase.table("notes").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
         return jsonify(res.data), 200
     except Exception as e:
         import traceback; traceback.print_exc()
@@ -55,6 +59,9 @@ def create_note():
     should_organize = body.get("organize", False)
     user_category = (body.get("category") or "").strip()
     user_id = body.get("user_id")  # Get user_id for tracking
+    
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
     
     if not new_note["title"] and not new_note["content"]:
         return jsonify({"error": "Empty note"}), 400
@@ -83,7 +90,8 @@ def create_note():
             **new_note,
             "embedding": embedding,
             "insights": insights,
-            "category": category
+            "category": category,
+            "user_id": user_id
         }
         res = supabase.table("notes").insert(insert_data).execute()
         
@@ -112,8 +120,18 @@ def create_note():
                         .insert({"user_id": user_id, "activity_date": today, "dump_count": 1})\
                         .execute()
                 
-                # Update streak
+                # Update streak and total dumps
                 supabase.rpc("update_user_streak", {"p_user_id": user_id}).execute()
+                
+                # Update total_dumps count
+                stats_res = supabase.table("user_stats").select("*").eq("user_id", user_id).execute()
+                if stats_res.data and len(stats_res.data) > 0:
+                    current_total = stats_res.data[0].get("total_dumps", 0)
+                    supabase.table("user_stats")\
+                        .update({"total_dumps": current_total + 1})\
+                        .eq("user_id", user_id)\
+                        .execute()
+                    
             except Exception as track_error:
                 # Don't fail the note creation if tracking fails
                 print(f"Activity tracking error: {track_error}")

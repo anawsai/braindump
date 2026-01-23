@@ -1,7 +1,7 @@
 import { Slot, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { LoadingProvider } from '../context/LoadingContext';
+import { LoadingProvider, useLoading } from '../context/LoadingContext';
 import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
 import { fetchNotes, getUserStats } from '../lib/api';
 import {Ionicons} from "@expo/vector-icons";
@@ -129,8 +129,10 @@ function Sidebar({
   );
 }
 
-export default function RootLayout() {
+// Wrapper component that has access to loading context
+function LayoutContent() {
   const router = useRouter();
+  const loading = useLoading();
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [noteCount, setNoteCount] = useState(0);
@@ -138,39 +140,58 @@ export default function RootLayout() {
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profileInitials, setProfileInitials] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   function applySessionUser(session: any | null) {
-  if (!session || !session.user) {
-    setProfileName('');
-    setProfileEmail('');
-    setProfileInitials('');
-    return;
+    if (!session || !session.user) {
+      setProfileName('');
+      setProfileEmail('');
+      setProfileInitials('');
+      setUserId(null);
+      return;
+    }
+
+    const user = session.user;
+    setUserId(user.id);
+
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.user_metadata?.username ||
+      (user.email ? user.email.split('@')[0] : 'User');
+
+    const email = user.email ?? '';
+
+    const initials = fullName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part: string) => part[0]?.toUpperCase())
+      .join('') || 'U';
+
+    setProfileName(fullName);
+    setProfileEmail(email);
+    setProfileInitials(initials);
   }
 
-  const user = session.user;
-
-  // Adjust these keys if you used a different field when signing up
-  const fullName =
-    user.user_metadata?.full_name ||
-    user.user_metadata?.name ||
-    user.user_metadata?.username ||
-    (user.email ? user.email.split('@')[0] : 'User');
-
-  const email = user.email ?? '';
-
-  // Make initials like "RJ" from "Rachel Jung"
-  const initials = fullName
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part: string) => part[0]?.toUpperCase())
-    .join('') || 'U';
-
-  setProfileName(fullName);
-  setProfileEmail(email);
-  setProfileInitials(initials);
-}
-
+  // Function to refresh stats - uses loading screen
+  const refreshStats = useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      loading.start('Updating...');
+      const [notes, stats] = await Promise.all([
+        fetchNotes(),
+        getUserStats(userId)
+      ]);
+      setNoteCount(notes.length);
+      setTasksCompleted(stats.tasks_completed || 0);
+    } catch (error: any) {
+      console.error('Error refreshing stats:', error?.message ?? error);
+    } finally {
+      loading.stop();
+    }
+  }, [userId, loading]);
 
   async function loadNoteCount() {
     try {
@@ -181,9 +202,9 @@ export default function RootLayout() {
     }
   }
 
-  async function loadUserStats(userId: string) {
+  async function loadUserStats(uid: string) {
     try {
-      const stats = await getUserStats(userId);
+      const stats = await getUserStats(uid);
       setTasksCompleted(stats.tasks_completed || 0);
     } catch (error: any) {
       console.error('Error loading user stats:', error?.message ?? error);
@@ -239,38 +260,53 @@ export default function RootLayout() {
     setTasksCompleted(0);
   }
 
-  function handleNavigate(path: string) {
+  async function handleNavigate(path: string) {
     router.push(path);
     setCollapsed(true);
+    
+    // Refresh stats after a short delay to let the page load
+    // This will trigger the orange loading screen with your animation
+    setTimeout(async () => {
+      if (userId) {
+        await refreshStats();
+      }
+    }, 300);
   }
 
   return (
-    <LoadingProvider>
-      <View style={styles.container}>
-        {showMenu && (
-          <Sidebar
-            collapsed={collapsed}
-            onNavigate={handleNavigate}
-            onSignOut={handleSignOut}
-            noteCount={noteCount}
-            tasksCompleted={tasksCompleted}
-            profileName={profileName}
-            profileEmail={profileEmail}
-            profileInitials={profileInitials}
-          />
-        )}
-        <View style={styles.content}>
-          <View style={styles.headerRow}>
-            <Pressable
-              onPress={() => setCollapsed((s) => !s)}
-              style={styles.menuButton}
-            >
-              {showMenu && <Text style={{ fontSize: 30 }}>{'☰'}</Text>}
-            </Pressable>
-          </View>
-          <Slot />
+    <View style={styles.container}>
+      {showMenu && (
+        <Sidebar
+          collapsed={collapsed}
+          onNavigate={handleNavigate}
+          onSignOut={handleSignOut}
+          noteCount={noteCount}
+          tasksCompleted={tasksCompleted}
+          profileName={profileName}
+          profileEmail={profileEmail}
+          profileInitials={profileInitials}
+        />
+      )}
+      <View style={styles.content}>
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => setCollapsed((s) => !s)}
+            style={styles.menuButton}
+          >
+            {showMenu && <Text style={{ fontSize: 30 }}>{'☰'}</Text>}
+          </Pressable>
         </View>
+        <Slot />
       </View>
+    </View>
+  );
+}
+
+// Main export wraps everything in LoadingProvider
+export default function RootLayout() {
+  return (
+    <LoadingProvider>
+      <LayoutContent />
     </LoadingProvider>
   );
 }
