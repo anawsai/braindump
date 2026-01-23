@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { deleteNote } from "../../lib/api";
 
 export default function DeleteNote() {
   const router = useRouter();
@@ -23,24 +24,12 @@ export default function DeleteNote() {
       Alert.alert("Error", "No note ID provided");
       return;
     }
-
+  
     setDeleting(true);
     try {
-      const response = await fetch(`http://localhost:8081/notes/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete note');
-      }
-
+      await deleteNote(String(id));
       Alert.alert("Success", "Note deleted successfully!");
-      router.replace('/notes'); // Go back to notes list
+      router.replace('/notes');
     } catch (err: any) {
       Alert.alert("Error deleting note", err?.message ?? String(err));
     } finally {

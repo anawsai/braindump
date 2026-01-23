@@ -165,14 +165,9 @@ export default function Dump() {
     }
   }
 
-  async function handleDelete(id?: string) {
+  function handleDelete(id?: string) {
     if (!id) return;
-    try {
-      await deleteNote(id);
-      await load();
-    } catch (e: any) {
-      Alert.alert("Error", e.message || "Failed to delete note");
-    }
+    router.push({ pathname: "/delete-note/delete", params: { id } });
   }
 
   async function onAdd() {
