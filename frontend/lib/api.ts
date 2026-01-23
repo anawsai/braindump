@@ -79,17 +79,19 @@ export async function getAdvice(title: string, content: string) {
   return data.advice
 }
 
-export async function getRelatedNotes(id:string, count = 5) {
-  const {data, error} = await await supabase.rpc("related_notes", {
-    target_id: id,
-    match_count: count
-  });
-
-  if (error) {
-    console.error("Related notes error:", error);
-    return [];
+export async function getRelatedNotes(noteId: string, count = 5) {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user?.id) {
+    throw new Error("Not authenticated");
   }
-  return data;
+  
+  const res = await fetch(
+    `${API}/notes/${noteId}/related?user_id=${user.id}&match_count=${count}&match_threshold=0.3`
+  );
+  
+  if (!res.ok) throw new Error("Failed to fetch related notes");
+  return res.json();
 }
 
 export async function getWeeklyNotes() {

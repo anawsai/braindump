@@ -88,12 +88,22 @@ def create_note():
         
         insert_data = {
             **new_note,
-            "embedding": embedding,
             "insights": insights,
             "category": category,
             "user_id": user_id
         }
         res = supabase.table("notes").insert(insert_data).execute()
+
+        if res.data and len(res.data) > 0:
+            note_id = res.data[0]["id"]
+            embedding_text = "[" + ",".join(map(str, embedding)) + "]"
+            supabase.rpc(
+                "update_note_embedding",
+                {
+                    "p_note_id": note_id,
+                    "p_embedding_text": embedding_text
+                }
+            ).execute()
         
         # Track user activity if user_id provided
         if user_id:
@@ -168,7 +178,18 @@ def update_note(note_id: str):
     try:
         if "content" in updates:
             model = SentenceTransformer("all-MiniLM-L6-v2")
-            updates["embedding"] = model.encode(updates["content"]).tolist()
+            embedding = model.encode(updates["content"]).tolist()
+            
+            # Don't include embedding in regular update - it won't work
+            # Do it via RPC instead
+            embedding_text = "[" + ",".join(map(str, embedding)) + "]"
+            supabase.rpc(
+                "update_note_embedding",
+                {
+                    "p_note_id": int(note_id),
+                    "p_embedding_text": embedding_text
+                }
+            ).execute()
             
             # Only generate insights if organize mode
             if should_organize:
@@ -556,6 +577,122 @@ def get_user_achievements(user_id: str):
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.get("/notes/<note_id>/related")
+def get_related_notes(note_id: str):
+    """Find notes related to the given note based on semantic similarity"""
+    try:
+        user_id = request.args.get("user_id")
+        match_count = int(request.args.get("match_count", 5))
+        match_threshold = float(request.args.get("match_threshold", 0.3))
+        
+        if not user_id:
+            return jsonify({"error": "user_id required"}), 400
+        
+        print(f"\n{'='*60}")
+        print(f"[DEBUG] Getting related notes for note {note_id}")
+        
+        # Get the source note info (don't need embedding, just metadata)
+        note_res = supabase.table("notes").select("id, title, content, category").eq("id", note_id).single().execute()
+        
+        if not note_res.data:
+            return jsonify({"error": "Note not found"}), 404
+        
+        target_note = note_res.data
+        
+        # Use RPC to get related notes (all vector math happens in PostgreSQL)
+        try:
+            related_res = supabase.rpc(
+                "get_related_notes",
+                {
+                    "p_note_id": int(note_id),
+                    "p_user_id": user_id,
+                    "p_match_count": match_count,
+                    "p_threshold": match_threshold
+                }
+            ).execute()
+            
+            related_notes = related_res.data or []
+            
+            print(f"[DEBUG] Found {len(related_notes)} related notes")
+            for note in related_notes[:5]:
+                print(f"  - Note {note['id']}: {note.get('title', 'Untitled')} - similarity: {note['similarity']:.3f}")
+            
+        except Exception as rpc_error:
+            print(f"[ERROR] RPC call failed: {rpc_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": f"Failed to get related notes: {str(rpc_error)}"}), 500
+        
+        print(f"{'='*60}\n")
+        
+        # Extract common themes
+        try:
+            themes = extract_common_themes(target_note, related_notes)
+        except Exception as e:
+            print(f"[ERROR] Error extracting themes: {e}")
+            themes = []
+        
+        return jsonify({
+            "source_note": target_note,
+            "related_notes": related_notes,
+            "common_themes": themes
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Unhandled exception:")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+def extract_common_themes(source_note, related_notes):
+    """Extract common themes between source note and related notes"""
+    try:
+        if not related_notes:
+            return []
+        
+        # Combine all content
+        all_content = source_note.get("content", "") + " "
+        all_content += " ".join([note.get("content", "") for note in related_notes])
+        
+        if not all_content.strip():
+            return []
+        
+        # Simple keyword extraction
+        try:
+            from nltk.corpus import stopwords
+            stop_words = set(stopwords.words('english'))
+        except Exception as e:
+            print(f"[WARN] NLTK stopwords not available: {e}")
+            # Fallback to basic stopwords
+            stop_words = set([
+                'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'been', 'be',
+                'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should',
+                'could', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those'
+            ])
+        
+        words = re.findall(r'\b[a-z]{4,}\b', all_content.lower())
+        
+        # Count word frequencies
+        word_counts = {}
+        for word in words:
+            if word not in stop_words:
+                word_counts[word] = word_counts.get(word, 0) + 1
+        
+        # Get top themes (words appearing 2+ times)
+        themes = sorted(
+            [(word, count) for word, count in word_counts.items() if count >= 2],
+            key=lambda x: x[1],
+            reverse=True
+        )[:5]
+        
+        return [word for word, _ in themes]
+        
+    except Exception as e:
+        print(f"[ERROR] Error in extract_common_themes: {e}")
+        return []
+    
 @app.get("/")
 def home():
     return jsonify({"message": "Backend is running"}), 200
