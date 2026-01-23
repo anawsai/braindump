@@ -6,11 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getWeeklyNotes, analyzeWeeklyNotes } from "../../lib/api";
+import { useLoading } from '../../context/LoadingContext';
 
 type CategoryData = {
   category: string;
@@ -30,7 +30,7 @@ type AnalysisData = {
 
 export default function ReviewPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const loading = useLoading();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [weeklyNotes, setWeeklyNotes] = useState<any[]>([]);
 
@@ -40,7 +40,7 @@ export default function ReviewPage() {
 
   async function loadWeeklyData() {
     try {
-      setLoading(true);
+      loading.start('Analyzing your week...'); // ← Shows orange loading screen
       const notes = await getWeeklyNotes();
       setWeeklyNotes(notes);
       const analysisData = analyzeWeeklyNotes(notes);
@@ -48,7 +48,7 @@ export default function ReviewPage() {
     } catch (error) {
       console.error("Failed to load weekly data:", error);
     } finally {
-      setLoading(false);
+      loading.stop(); // ← Hides loading screen after 2 seconds minimum
     }
   }
 
@@ -125,13 +125,9 @@ export default function ReviewPage() {
     return icons[category] || "star";
   }
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FFB052" />
-        <Text style={styles.loadingText}>Analyzing your week...</Text>
-      </View>
-    );
+  // Don't show the old ActivityIndicator anymore - the orange loading screen handles it
+  if (!analysis) {
+    return null; // Return nothing while loading (orange screen shows instead)
   }
 
   // Get top 2 categories for display
@@ -453,17 +449,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#666666",
   },
   header: {
     flexDirection: "row",

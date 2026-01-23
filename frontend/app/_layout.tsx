@@ -174,7 +174,7 @@ function LayoutContent() {
     setProfileInitials(initials);
   }
 
-  // Function to refresh stats - uses loading screen
+  // Function to refresh stats - only call this when you actually want the loading screen
   const refreshStats = useCallback(async () => {
     if (!userId) return;
     
@@ -263,14 +263,8 @@ function LayoutContent() {
   async function handleNavigate(path: string) {
     router.push(path);
     setCollapsed(true);
-    
-    // Refresh stats after a short delay to let the page load
-    // This will trigger the orange loading screen with your animation
-    setTimeout(async () => {
-      if (userId) {
-        await refreshStats();
-      }
-    }, 300);
+    // Removed automatic refreshStats - stats update happens naturally when pages load
+    // If you want to show loading for specific pages, add refreshStats() in those page components instead
   }
 
   return (
