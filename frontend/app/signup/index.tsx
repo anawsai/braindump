@@ -1,4 +1,3 @@
-// Signup Form
 import React, { useState } from "react";
 import {
   View,
@@ -15,9 +14,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Signup() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -78,13 +79,13 @@ export default function Signup() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.select({ ios: "padding", android: undefined })}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.primary }]}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
 
       {/* Top section with mascot */}
-      <View style={styles.topSection}>
-        <View style={styles.brainContainer}>
+      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
+        <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
           <Image 
             source={require('../../assets/mascot.png')} 
             style={styles.mascotImage}
@@ -93,29 +94,29 @@ export default function Signup() {
       </View>
 
       {/* Orange form section */}
-      <View style={styles.formSection}>
-        <Text style={styles.welcomeTitle}>Create Account</Text>
+      <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
+        <Text style={[styles.welcomeTitle, { color: colors.text }]}>Create Account</Text>
 
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.placeholder}
           placeholder="email@example.com"
         />
 
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.passwordContainer}>
+        <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+        <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
           <TextInput
-            style={styles.passwordInput}
+            style={[styles.passwordInput, { color: colors.text }]}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
             autoCapitalize="none"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.placeholder}
             placeholder="At least 6 characters"
           />
           <TouchableOpacity 
@@ -125,20 +126,20 @@ export default function Signup() {
             <Ionicons 
               name={showPassword ? "eye-off-outline" : "eye-outline"} 
               size={22} 
-              color="#666" 
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.label}>Confirm Password</Text>
-        <View style={styles.passwordContainer}>
+        <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
+        <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
           <TextInput
-            style={styles.passwordInput}
+            style={[styles.passwordInput, { color: colors.text }]}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showConfirmPassword}
             autoCapitalize="none"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.placeholder}
             placeholder="Re-enter password"
           />
           <TouchableOpacity 
@@ -148,25 +149,25 @@ export default function Signup() {
             <Ionicons 
               name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
               size={22} 
-              color="#666" 
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity 
-          style={styles.signupButton}
+          style={[styles.signupButton, { backgroundColor: colors.text }]}
           onPress={handleSignup}
           disabled={loading}
         >
-          <Text style={styles.signupButtonText}>
+          <Text style={[styles.signupButtonText, { color: colors.primary }]}>
             {loading ? 'Creating Account...' : 'SIGN UP'}
           </Text>
         </TouchableOpacity>
 
         <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Already have an account? </Text>
+          <Text style={[styles.loginText, { color: colors.text }]}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/login')}>
-            <Text style={styles.loginLink}>Login here!</Text>
+            <Text style={[styles.loginLink, { color: colors.text }]}>Login here!</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -177,19 +178,16 @@ export default function Signup() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFB052",
   },
   topSection: {
     flex: 0.3,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFB052",
   },
   brainContainer: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#FFB052",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -200,7 +198,6 @@ const styles = StyleSheet.create({
   },
   formSection: {
     flex: 0.7,
-    backgroundColor: "#FFB052",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
@@ -209,28 +206,23 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#000000",
     marginBottom: 25,
   },
   label: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#000000",
     marginBottom: 8,
     marginTop: 5,
   },
   input: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     padding: 13,
     fontSize: 15,
     marginBottom: 18,
-    color: "#000000",
   },
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     marginBottom: 15,
   },
@@ -238,13 +230,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 13,
     fontSize: 15,
-    color: "#000000",
   },
   eyeButton: {
     padding: 13,
   },
   signupButton: {
-    backgroundColor: "#000000",
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
@@ -252,7 +242,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   signupButtonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -263,11 +252,9 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 14,
-    color: "#000000",
   },
   loginLink: {
     fontSize: 14,
-    color: "#000000",
     textDecorationLine: "underline",
     fontWeight: "600",
   },

@@ -2,6 +2,7 @@ import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { LoadingProvider, useLoading } from '../context/LoadingContext';
+import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
 import { fetchNotes, getUserStats } from '../lib/api';
 import {Ionicons} from "@expo/vector-icons";
@@ -26,10 +27,12 @@ function Sidebar({
   profileEmail: string;
   profileInitials: string;
 }) {
+  const { colors } = useTheme();
+  
   if (collapsed) return null;
 
   return (
-    <View style={styles.sidebar}>
+    <View style={[styles.sidebar, { backgroundColor: colors.sidebar, borderRightColor: colors.border }]}>
       <View style={styles.mascotSection}>
         <Image
           source={require('../assets/mascot.png')}
@@ -37,73 +40,71 @@ function Sidebar({
         />
       </View>
 
-      <View style={styles.dividerLine} />
+      <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
 
     <Pressable
   style={styles.profileSection}
   onPress={() => onNavigate('profile')}
 >
   <View style={styles.profileRow}>
-    <View style={styles.profileCircle}>
+    <View style={[styles.profileCircle, { backgroundColor: colors.primaryDark }]}>
       <Text style={styles.profileInitials}>{profileInitials}</Text>
     </View>
     <View style={styles.profileInfo}>
-      <Text style={styles.profileName}>{profileName}</Text>
-      <Text style={styles.profileEmail}>{profileEmail}</Text>
+      <Text style={[styles.profileName, { color: colors.text }]}>{profileName}</Text>
+      <Text style={[styles.profileEmail, { color: colors.text }]}>{profileEmail}</Text>
     </View>
   </View>
 
   <View style={styles.statsWrapper}>
     <View style={styles.statItem}>
-      <Ionicons name="document-text" size={23} color="#000" />
-      <Text style={styles.statText}>{noteCount}</Text>
+      <Ionicons name="document-text" size={23} color={colors.icon} />
+      <Text style={[styles.statText, { color: colors.text }]}>{noteCount}</Text>
     </View>
 
     <View style={styles.statItem}>
-      <Ionicons name="checkmark-circle" size={23} color="#000" />
-      <Text style={styles.statText}>{tasksCompleted}</Text>
+      <Ionicons name="checkmark-circle" size={23} color={colors.icon} />
+      <Text style={[styles.statText, { color: colors.text }]}>{tasksCompleted}</Text>
     </View>
   </View>
 </Pressable>
 
       <View style={styles.navSection}>
         <Pressable style={styles.navButton} onPress={() => onNavigate('/dump')}>
-          <Text style={styles.navButtonText}>Dump</Text>
+          <Text style={[styles.navButtonText, { color: colors.text }]}>Dump</Text>
         </Pressable>
 
         <Pressable
           style={[styles.navButton, styles.navButtonActive]}
           onPress={() => onNavigate('/notes')}
         >
-          <Ionicons name="journal" size={25} color="#000" style={styles.navButtonIcon} />
-          <Text style={styles.navButtonText}>Notes</Text>
+          <Ionicons name="journal" size={25} color={colors.icon} style={styles.navButtonIcon} />
+          <Text style={[styles.navButtonText, { color: colors.text }]}>Notes</Text>
         </Pressable>
-
-
 
         <Pressable
           style={styles.navButton}
           onPress={() => onNavigate('/review')}
         >
-          <Text style={styles.navButtonText}>Review</Text>
+          <Text style={[styles.navButtonText, { color: colors.text }]}>Review</Text>
         </Pressable>
       </View>
 
-      <View style={styles.dividerLine} />
+      <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
 
       <View style={[styles.quickActions, { marginTop: 18 }]}>
         <Pressable
           style={styles.settingsButton}
           onPress={() => onNavigate('/settings')}
         >
-          <Text style={styles.navButtonText}>Settings</Text>
+          <Text style={[styles.navButtonText, { color: colors.text }]}>Settings</Text>
         </Pressable>
 
         <Pressable
           style={styles.settingsButton}
           onPress={() => onNavigate('/help')}
         >
-          <Text style={styles.navButtonText}>Help & Support</Text>
+          <Text style={[styles.navButtonText, { color: colors.text }]}>Help & Support</Text>
         </Pressable>
       </View>
 
@@ -112,7 +113,7 @@ function Sidebar({
       <View style={styles.bottomSection}>
         <View style={{ marginTop: 8 }} />
         <Pressable
-          style={styles.signOutButton}
+          style={[styles.signOutButton, { backgroundColor: colors.primaryDark, borderColor: colors.border }]}
           onPress={async () => {
             try {
               await onSignOut();
@@ -121,18 +122,19 @@ function Sidebar({
             }
           }}
         >
-          <Ionicons name="log-out-outline" size={28} color="#000" style={styles.navButtonIcon} />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Ionicons name="log-out-outline" size={28} color={colors.icon} style={styles.navButtonIcon} />
+          <Text style={[styles.signOutText, { color: colors.text }]}>Sign Out</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
-// Wrapper component that has access to loading context
+// Wrapper component that has access to theme and loading context
 function LayoutContent() {
   const router = useRouter();
   const loading = useLoading();
+  const { colors } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [noteCount, setNoteCount] = useState(0);
@@ -174,7 +176,6 @@ function LayoutContent() {
     setProfileInitials(initials);
   }
 
-  // Function to refresh stats - only call this when you actually want the loading screen
   const refreshStats = useCallback(async () => {
     if (!userId) return;
     
@@ -263,12 +264,10 @@ function LayoutContent() {
   async function handleNavigate(path: string) {
     router.push(path);
     setCollapsed(true);
-    // Removed automatic refreshStats - stats update happens naturally when pages load
-    // If you want to show loading for specific pages, add refreshStats() in those page components instead
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {showMenu && (
         <Sidebar
           collapsed={collapsed}
@@ -281,13 +280,13 @@ function LayoutContent() {
           profileInitials={profileInitials}
         />
       )}
-      <View style={styles.content}>
-        <View style={styles.headerRow}>
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
+        <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
           <Pressable
             onPress={() => setCollapsed((s) => !s)}
             style={styles.menuButton}
           >
-            {showMenu && <Text style={{ fontSize: 30 }}>{'☰'}</Text>}
+            {showMenu && <Text style={[{ fontSize: 30 }, { color: colors.text }]}>{'☰'}</Text>}
           </Pressable>
         </View>
         <Slot />
@@ -296,12 +295,14 @@ function LayoutContent() {
   );
 }
 
-// Main export wraps everything in LoadingProvider
+// Main export wraps everything in ThemeProvider and LoadingProvider
 export default function RootLayout() {
   return (
-    <LoadingProvider>
-      <LayoutContent />
-    </LoadingProvider>
+    <ThemeProvider>
+      <LoadingProvider>
+        <LayoutContent />
+      </LoadingProvider>
+    </ThemeProvider>
   );
 }
 
@@ -309,7 +310,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     padding: 0,
   },
 
@@ -317,9 +317,7 @@ const styles = StyleSheet.create({
     width: 320,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    backgroundColor: '#FFB052',
     borderRightWidth: 1,
-    borderRightColor: '#000000',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.18,
@@ -345,7 +343,6 @@ const styles = StyleSheet.create({
 
   dividerLine: {
     height: 1,
-    backgroundColor: '#000000',
     marginHorizontal: -20,
     alignSelf: 'stretch',
   },
@@ -366,7 +363,6 @@ const styles = StyleSheet.create({
     width: 85,
     height: 85,
     borderRadius: 50,
-    backgroundColor: '#FF8D05',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -388,13 +384,11 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000000',
     marginBottom: 6,
   },
 
   profileEmail: {
     fontSize: 13,
-    color: '#000000',
     textDecorationLine: 'underline',
   },
 
@@ -416,7 +410,6 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#000",
   },
 
   navSection: {
@@ -448,7 +441,6 @@ const styles = StyleSheet.create({
   navButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
     textAlign: 'center',
   },
 
@@ -491,10 +483,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF8D05',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#000000',
     paddingVertical: 8,
     paddingHorizontal: 16,
     width: '85%',
@@ -516,12 +506,10 @@ const styles = StyleSheet.create({
   signOutText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#000000',
   },
 
   content: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     marginLeft: 16,
     padding: 18,
   },
@@ -533,7 +521,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
   },
 
   menuButton: {

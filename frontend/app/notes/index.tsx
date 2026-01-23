@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchNotes, addNote, deleteNote } from "../../lib/api";
 import { useLoading } from '../../context/LoadingContext';
+import { useTheme } from '../../context/ThemeContext';
 
 function timeAgo(timestamp?: string) {
   if (!timestamp) return "";
@@ -50,6 +51,7 @@ function NoteCard({
   onDelete: (id?: string) => void;
 }) {
   const router = useRouter();
+  const { colors } = useTheme();
   const [editHover, setEditHover] = useState(false);
   const [deleteHover, setDeleteHover] = useState(false);
 
@@ -60,11 +62,12 @@ function NoteCard({
       onPress={() => router.push({ pathname: "/note-detail/[id]", params: { id: item.id } })}
       activeOpacity={0.7}
     >
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.accent }]}>
         <View style={styles.cardHeader}>
           <View style={[
               styles.circleCheckbox,
-              item.is_completed && styles.circleCheckboxCompleted
+              { borderColor: colors.text },
+              item.is_completed && { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' }
             ]}>
               {item.is_completed && (
                 <Ionicons name="checkmark" size={14} color="#4CAF50" />
@@ -72,6 +75,7 @@ function NoteCard({
             </View>
             <Text style={[
               styles.cardTitle,
+              { color: colors.text },
               item.is_completed && styles.cardTitleCompleted
             ]}>
               {item.title || "Note Title"}
@@ -83,27 +87,24 @@ function NoteCard({
               setOpenMenuId(isOpen ? null : (item.id as string));
             }}
           >
-            <Ionicons name="ellipsis-vertical" size={22} color="#333" />
+            <Ionicons name="ellipsis-vertical" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.cardBody}>
-          <Text style={styles.cardContent}>{item.content}</Text>
+          <Text style={[styles.cardContent, { color: colors.textSecondary }]}>{item.content}</Text>
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.timestamp}>{timeAgo(item.created_at)}</Text>
+          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{timeAgo(item.created_at)}</Text>
         </View>
 
         {isOpen && (
           <View
-            style={{
-              position: "absolute",
-              top: 40,
-              right: 16,
-              backgroundColor: "#fff",
-              borderWidth: 1,
-            }}
+            style={[styles.dropdown, {
+              backgroundColor: colors.primary,
+              borderColor: colors.accent,
+            }]}
           >
             <Pressable
               onPress={() => {
@@ -115,12 +116,13 @@ function NoteCard({
               }}
               onHoverIn={() => setEditHover(true)}
               onHoverOut={() => setEditHover(false)}
-              style={{
-                padding: 12,
-                backgroundColor: editHover ? "#f0f0f0" : "#fff",
-              }}
+              style={[
+                styles.dropdownItem,
+                { borderBottomColor: colors.accent },
+                editHover && { backgroundColor: colors.background }
+              ]}
             >
-              <Text>Edit</Text>
+              <Text style={[styles.dropdownText, { color: colors.text }]}>Edit</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -129,12 +131,13 @@ function NoteCard({
               }}
               onHoverIn={() => setDeleteHover(true)}
               onHoverOut={() => setDeleteHover(false)}
-              style={{
-                padding: 12,
-                backgroundColor: deleteHover ? "#f0f0f0" : "#fff",
-              }}
+              style={[
+                styles.dropdownItem,
+                { borderBottomColor: colors.accent },
+                deleteHover && { backgroundColor: colors.background }
+              ]}
             >
-              <Text>Delete</Text>
+              <Text style={[styles.dropdownText, { color: colors.text }]}>Delete</Text>
             </Pressable>
           </View>
         )}
@@ -145,6 +148,7 @@ function NoteCard({
 
 export default function Dump() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(true);
   const [title, setTitle] = useState("");
@@ -208,22 +212,23 @@ export default function Dump() {
   const upcomingCount = 0;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Notes</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.heading, { color: colors.text }]}>Notes</Text>
 
       {/* Search bar */}
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, { borderColor: colors.border }]}>
         <Ionicons
           name="search"
           size={20}
-          color="#666"
+          color={colors.textSecondary}
           style={styles.searchIcon}
         />
         <TextInput
           placeholder="Search your thoughts..."
+          placeholderTextColor={colors.placeholder}
           value={query}
           onChangeText={setQuery}
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           returnKeyType="search"
         />
       </View>
@@ -231,27 +236,27 @@ export default function Dump() {
       {/* Add + chips */}
       <View style={styles.controlsRow}>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: colors.primary, borderColor: colors.accent }]}
           onPress={() => router.push("/add-notes/add-notes")}
         >
-          <Text style={styles.addButtonText}>＋ Add Note</Text>
+          <Text style={[styles.addButtonText, { color: colors.text }]}>＋ Add Note</Text>
         </TouchableOpacity>
 
         <View style={styles.chipsRow}>
-          <TouchableOpacity style={[styles.chip, styles.chipActive]}>
-            <Text style={styles.chipText}>all ({allCount})</Text>
+          <TouchableOpacity style={[styles.chip, styles.chipActive, { backgroundColor: colors.primary, borderColor: colors.accent }]}>
+            <Text style={[styles.chipText, { color: colors.text }]}>all ({allCount})</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>today ({todayCount})</Text>
+          <TouchableOpacity style={[styles.chip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.accent }]}>
+            <Text style={[styles.chipText, { color: colors.text }]}>today ({todayCount})</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.chip}>
-            <Text style={styles.chipText}>upcoming ({upcomingCount})</Text>
+          <TouchableOpacity style={[styles.chip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.accent }]}>
+            <Text style={[styles.chipText, { color: colors.text }]}>upcoming ({upcomingCount})</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {loadingNotes ? (
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.primary} />
       ) : (
         <FlatList
           data={filtered}
@@ -278,7 +283,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingTop: 24,
     paddingBottom: 16,
-    backgroundColor: "#FFFFFF",
   },
 
   heading: { fontSize: 22, fontWeight: "700", marginBottom: 18 },
@@ -287,7 +291,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e5e5e5",
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -304,34 +307,28 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   addButton: {
-    backgroundColor: "#FFB052",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#C9731E",
   },
-  addButtonText: { color: "#2b1a0d", fontWeight: "600", fontSize: 14 },
+  addButtonText: { fontWeight: "600", fontSize: 14 },
   chipsRow: { flexDirection: "row", gap: 8 },
   chip: {
-    backgroundColor: "#FFDAB3",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#C9731E",
   },
-  chipActive: { backgroundColor: "#FFB052" },
-  chipText: { color: "#2b1a0d", fontWeight: "600" },
+  chipActive: {},
+  chipText: { fontWeight: "600" },
 
   /* cards */
   card: {
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#7A4C2B",
     borderRadius: 10,
-    backgroundColor: "#f6f3f0",
   },
   cardHeader: {
     flexDirection: "row",
@@ -343,7 +340,6 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#2b1a0d",
     marginRight: 12,
   },
   menuButton: {
@@ -355,44 +351,36 @@ const styles = StyleSheet.create({
   cardBody: {
     marginTop: 4,
   },
-  cardContent: { color: "#333", fontSize: 14 },
+  cardContent: { fontSize: 14 },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 60,
   },
-  timestamp: { fontSize: 12, color: "#777" },
+  timestamp: { fontSize: 12 },
 
   dropdown: {
-  position: "absolute",
-  top: 30,
-  right: 0,
-  backgroundColor: "#FFB052",
-  borderWidth: 1,
-  borderColor: "#C9731E",
-  borderRadius: 10,
-  overflow: "hidden",
-  zIndex: 50,
-  alignItems: "stretch",
-},
+    position: "absolute",
+    top: 30,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 10,
+    overflow: "hidden",
+    zIndex: 50,
+    alignItems: "stretch",
+  },
 
-dropdownItem: {
-  width: 200,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderBottomWidth: 1,
-  borderBottomColor: "#C9731E",
-  justifyContent: "center",
-  alignItems: "stretch", 
-},
-
-dropdownItemHover: {
-    backgroundColor: "#ffffff",
+  dropdownItem: {
+    width: 200,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    justifyContent: "center",
+    alignItems: "stretch", 
   },
 
   dropdownText: {
-    color: "#2b1a0d",
     width: "100%",
     textAlign: "left",
     paddingVertical: 0,
@@ -407,5 +395,3 @@ dropdownItemHover: {
     color: '#666',
   },
 });
-
-

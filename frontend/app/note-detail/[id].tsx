@@ -13,47 +13,50 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchNoteById, completeTask, uncompleteTask } from "../../lib/api";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function NoteDetail() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [note, setNote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
   const handleShare = async () => {
-  if (!note) return;
+    if (!note) return;
 
-  const title = note.title || "Note";
-  const text = `${title}\n\n${note.content || ""}`;
+    const title = note.title || "Note";
+    const text = `${title}\n\n${note.content || ""}`;
 
-      if (Platform.OS === 'web') {
-        const nav: any = navigator;
+    if (Platform.OS === 'web') {
+      const nav: any = navigator;
 
-        if ((nav && typeof nav.share === 'function')) {
-          try {
-            await nav.share({
-              title,
-              text,
-            });
-          } catch (error) {
-            console.error(error);
-            Alert.alert("Error", "Sharing failed.");
-          }
-        } else {
-          Alert.alert("Error", "Web Share API not supported in this browser.");
-        }
-      } else {
+      if ((nav && typeof nav.share === 'function')) {
         try {
-          await Share.share({
+          await nav.share({
             title,
-            message: text,
+            text,
           });
         } catch (error) {
           console.error(error);
           Alert.alert("Error", "Sharing failed.");
         }
+      } else {
+        Alert.alert("Error", "Web Share API not supported in this browser.");
       }
-    };
+    } else {
+      try {
+        await Share.share({
+          title,
+          message: text,
+        });
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Error", "Sharing failed.");
+      }
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -76,16 +79,16 @@ export default function NoteDetail() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FFB052" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!note) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Note not found</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.text }}>Note not found</Text>
       </View>
     );
   }
@@ -102,24 +105,24 @@ export default function NoteDetail() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
+          <Ionicons name="arrow-back" size={24} color={colors.icon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detail</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Detail</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.scrollContent}>
         {/* Note Title Section */}
         <View style={styles.titleSection}>
-          <View style={styles.titleRow}>
-            <Text style={styles.noteTitle}>{note.title || "Note Title"}</Text>
-            <TouchableOpacity style={styles.categoryBadge}>
-              <Ionicons name="star" size={14} color="#000000" style={{ marginRight: 4 }} />
-              <Text style={styles.categoryText}>
+          <View style={[styles.titleRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.noteTitle, { color: colors.text }]}>{note.title || "Note Title"}</Text>
+            <TouchableOpacity style={[styles.categoryBadge, { backgroundColor: colors.primary, borderColor: colors.border }]}>
+              <Ionicons name="star" size={14} color={colors.icon} style={{ marginRight: 4 }} />
+              <Text style={[styles.categoryText, { color: colors.text }]}>
                 {note.category || "Health"}
               </Text>
             </TouchableOpacity>
@@ -127,19 +130,19 @@ export default function NoteDetail() {
         </View>
 
         {/* Note Content */}
-        <View style={styles.contentSection}>
-          <Text style={styles.noteContent}>{note.content || "No content"}</Text>
-          <Text style={styles.timestamp}>{timeAgo(note.created_at)}</Text>
+        <View style={[styles.contentSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.noteContent, { color: colors.text }]}>{note.content || "No content"}</Text>
+          <Text style={[styles.timestamp, { color: colors.textSecondary }]}>{timeAgo(note.created_at)}</Text>
         </View>
 
         {/* Insights Section */}
-        <View style={styles.insightsSection}>
+        <View style={[styles.insightsSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.insightsIconContainer}>
-            <Ionicons name="bulb" size={32} color="#FFB052" />
+            <Ionicons name="bulb" size={32} color={colors.primary} />
           </View>
-          <Text style={styles.insightsTitle}>Insights</Text>
+          <Text style={[styles.insightsTitle, { color: colors.text }]}>Insights</Text>
           <View style={styles.insightsContent}>
-            <Text style={styles.insightText}>
+            <Text style={[styles.insightText, { color: colors.textSecondary }]}>
               {note.insights || "No insights generated yet"}
             </Text>
           </View>
@@ -147,18 +150,18 @@ export default function NoteDetail() {
       </ScrollView>
 
       {/* Bottom Actions */}
-      <View style={styles.bottomActions}>
+      <View style={[styles.bottomActions, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => router.push({ pathname: "/edit-notes/edit", params: { id } })}
         >
-          <Ionicons name="create-outline" size={24} color="#000000" />
-          <Text style={styles.actionText}>Edit</Text>
+          <Ionicons name="create-outline" size={24} color={colors.icon} />
+          <Text style={[styles.actionText, { color: colors.text }]}>Edit</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-          <Ionicons name="share-outline" size={24} color="#000000" />
-          <Text style={styles.actionText}>Share</Text>
+          <Ionicons name="share-outline" size={24} color={colors.icon} />
+          <Text style={[styles.actionText, { color: colors.text }]}>Share</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -166,15 +169,12 @@ export default function NoteDetail() {
           onPress={async () => {
             try {
               if (note.is_completed) {
-                // Uncomplete the task
                 await uncompleteTask(String(id));
                 Alert.alert("Success", "Task marked as incomplete");
               } else {
-                // Complete the task
                 await completeTask(String(id));
                 Alert.alert("Success", "Task completed! 🎉");
               }
-              // Reload the note to get updated status
               const updatedNote = await fetchNoteById(String(id));
               setNote(updatedNote);
             } catch (error: any) {
@@ -185,27 +185,27 @@ export default function NoteDetail() {
           <Ionicons 
             name={note.is_completed ? "checkmark-circle" : "checkmark-circle-outline"} 
             size={24} 
-            color={note.is_completed ? "#4CAF50" : "#000000"} 
+            color={note.is_completed ? colors.success : colors.icon} 
           />
           <Text style={[
             styles.actionText, 
-            note.is_completed && { color: "#4CAF50" }
+            { color: note.is_completed ? colors.success : colors.text }
           ]}>
             {note.is_completed ? "Completed ✓" : "Mark Complete"}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton} onPress={() => router.push({pathname: "/related-notes", params: { id }})}>
-          <Ionicons name="git-network-outline" size={24} color="#000000" />
-          <Text style={styles.actionText}>Related Notes</Text>
+          <Ionicons name="git-network-outline" size={24} color={colors.icon} />
+          <Text style={[styles.actionText, { color: colors.text }]}>Related Notes</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => router.push({ pathname: "/delete-note/delete", params: { id } })}
         >
-          <Ionicons name="trash-outline" size={24} color="#FF5500" />
-          <Text style={[styles.actionText, { color: "#FF5500" }]}>Delete</Text>
+          <Ionicons name="trash-outline" size={24} color={colors.error} />
+          <Text style={[styles.actionText, { color: colors.error }]}>Delete</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -215,13 +215,11 @@ export default function NoteDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
@@ -230,12 +228,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#000000",
   },
   scrollContent: {
     flex: 1,
@@ -249,39 +245,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    backgroundColor: "#FFDBB0",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#000000",
     padding: 16,
   },
   noteTitle: {
     flex: 1,
     fontSize: 18,
     fontWeight: "700",
-    color: "#000000",
     marginRight: 12,
   },
   categoryBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFB052",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#000000",
   },
   categoryText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000000",
   },
   contentSection: {
-    backgroundColor: "#FFDBB0",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#000000",
     padding: 16,
     minHeight: 200,
     marginBottom: 20,
@@ -289,20 +277,16 @@ const styles = StyleSheet.create({
   },
   noteContent: {
     fontSize: 16,
-    color: "#000000",
     lineHeight: 24,
     marginBottom: 12,
   },
   timestamp: {
     fontSize: 12,
-    color: "#666666",
     textAlign: "right",
   },
   insightsSection: {
-    backgroundColor: "#FFDBB0",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#000000",
     padding: 16,
     marginBottom: 100,
     alignItems: "center",
@@ -313,7 +297,6 @@ const styles = StyleSheet.create({
   insightsTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#000000",
     marginBottom: 12,
   },
   insightsContent: {
@@ -321,7 +304,6 @@ const styles = StyleSheet.create({
   },
   insightText: {
     fontSize: 14,
-    color: "#333333",
     lineHeight: 20,
   },
   bottomActions: {
@@ -334,9 +316,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 8,
-    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -351,7 +331,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 11,
-    color: "#000000",
     marginTop: 4,
     fontWeight: "500",
   },

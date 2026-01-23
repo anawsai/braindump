@@ -1,4 +1,3 @@
-// Login Form here
 import React, { useState } from "react";
 import {
   View,
@@ -15,9 +14,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Login() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -45,13 +46,13 @@ export default function Login() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.select({ ios: "padding", android: undefined })}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.primary }]}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
 
       {/* Top section with mascot */}
-      <View style={styles.topSection}>
-        <View style={styles.brainContainer}>
+      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
+        <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
           <Image
             source={require('../../assets/mascot.png')}
             style={styles.mascotImage}
@@ -60,28 +61,28 @@ export default function Login() {
       </View>
 
       {/* Orange form section */}
-      <View style={styles.formSection}>
-        <Text style={styles.welcomeTitle}>Welcome Back!</Text>
+      <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
+        <Text style={[styles.welcomeTitle, { color: colors.text }]}>Welcome Back!</Text>
 
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.placeholder}
         />
 
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.passwordContainer}>
+        <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+        <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
           <TextInput
-            style={styles.passwordInput}
+            style={[styles.passwordInput, { color: colors.text }]}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
             autoCapitalize="none"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.placeholder}
           />
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
@@ -90,7 +91,7 @@ export default function Login() {
             <Ionicons
               name={showPassword ? "eye-off-outline" : "eye-outline"}
               size={22}
-              color="#666"
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
@@ -100,31 +101,31 @@ export default function Login() {
             style={styles.checkboxContainer}
             onPress={() => setRememberMe(!rememberMe)}
           >
-            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-              {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+            <View style={[styles.checkbox, { borderColor: colors.text, backgroundColor: colors.background }, rememberMe && { backgroundColor: colors.text }]}>
+              {rememberMe && <Text style={[styles.checkmark, { color: colors.background }]}>✓</Text>}
             </View>
-            <Text style={styles.rememberText}>Remember me</Text>
+            <Text style={[styles.rememberText, { color: colors.text }]}>Remember me</Text>
           </TouchableOpacity>
 
           <TouchableOpacity>
-            <Text style={styles.forgotText}>Forgot password?</Text>
+            <Text style={[styles.forgotText, { color: colors.text }]}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          style={styles.loginButton}
+          style={[styles.loginButton, { backgroundColor: colors.text }]}
           onPress={handleLogin}
           disabled={loading}
         >
-          <Text style={styles.loginButtonText}>
+          <Text style={[styles.loginButtonText, { color: colors.primary }]}>
             {loading ? 'Logging in...' : 'LOGIN'}
           </Text>
         </TouchableOpacity>
 
         <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>Don't have an account? </Text>
+          <Text style={[styles.signupText, { color: colors.text }]}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/signup')}>
-            <Text style={styles.signupLink}>Sign up here!</Text>
+            <Text style={[styles.signupLink, { color: colors.text }]}>Sign up here!</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -135,19 +136,16 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFB052",
   },
   topSection: {
     flex: 0.35,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFB052",
   },
   brainContainer: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#FFB052",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -158,7 +156,6 @@ const styles = StyleSheet.create({
   },
   formSection: {
     flex: 0.65,
-    backgroundColor: "#FFB052",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
@@ -167,28 +164,23 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#000000",
     marginBottom: 25,
   },
   label: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#000000",
     marginBottom: 8,
     marginTop: 5,
   },
   input: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     padding: 13,
     fontSize: 15,
     marginBottom: 18,
-    color: "#000000",
   },
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     marginBottom: 15,
   },
@@ -196,7 +188,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 13,
     fontSize: 15,
-    color: "#000000",
   },
   eyeButton: {
     padding: 13,
@@ -215,39 +206,29 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderWidth: 2,
-    borderColor: "#000000",
     borderRadius: 3,
     marginRight: 8,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  checkboxChecked: {
-    backgroundColor: "#000000",
   },
   checkmark: {
-    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "bold",
   },
   rememberText: {
     fontSize: 14,
-    color: "#000000",
   },
   forgotText: {
     fontSize: 14,
-    color: "#000000",
     textDecorationLine: "underline",
   },
   loginButton: {
-    backgroundColor: "#000000",
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
     marginBottom: 20,
   },
   loginButtonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -258,11 +239,9 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 14,
-    color: "#000000",
   },
   signupLink: {
     fontSize: 14,
-    color: "#000000",
     textDecorationLine: "underline",
     fontWeight: "600",
   },

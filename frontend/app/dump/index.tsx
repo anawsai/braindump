@@ -12,8 +12,10 @@ import {
 } from "react-native";
 import { addNote } from "../../lib/api";
 import { useLoading } from '../../context/LoadingContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Notes() {
+  const { colors } = useTheme();
   const [noteText, setNoteText] = useState("");
   const [saving, setSaving] = useState(false);
   const loading = useLoading();
@@ -83,8 +85,8 @@ export default function Notes() {
   }
 
   return (
-    <View style={[styles.container, (loading.active || saving) && styles.dimmed]}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { backgroundColor: colors.background }, (loading.active || saving) && styles.dimmed]}>
+      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
 
       {/* Mascot prompt */}
       <View style={styles.promptContainer}>
@@ -92,18 +94,25 @@ export default function Notes() {
           source={require('../../assets/mascot.png')} 
           style={styles.mascotImage}
         />
-        <Text style={styles.promptText}>{prompt}</Text>
+        <Text style={[styles.promptText, { color: colors.text }]}>{prompt}</Text>
       </View>
 
       {/* Text input area */}
-      <View style={[styles.inputContainer, (loading.active || saving) && styles.dimmed]}>
+      <View style={[
+        styles.inputContainer, 
+        { 
+          borderColor: colors.border, 
+          backgroundColor: colors.input 
+        },
+        (loading.active || saving) && styles.dimmed
+      ]}>
         <TextInput
           placeholder="What's on your mind? Ideas, tasks, random thoughts, anything...."
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.placeholder}
           multiline
           value={noteText}
           onChangeText={setNoteText}
-          style={styles.textInput}
+          style={[styles.textInput, { color: colors.text }]}
           editable={!loading.active}
         />
       </View>
@@ -111,20 +120,20 @@ export default function Notes() {
       {/* Buttons */}
       <View style={styles.buttonRow}>
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={saveNote}
           disabled={saving || loading.active}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, { color: colors.text }]}>
             {saving ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={saveAndOrganize}
           disabled={saving || loading.active}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, { color: colors.text }]}>
             {saving ? 'Saving...' : 'Save & Organize'}
           </Text>
         </TouchableOpacity>
@@ -136,9 +145,8 @@ export default function Notes() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
     padding: 16,
-    paddingTop: 40, // Add some top padding since we removed the header
+    paddingTop: 40,
   },
   promptContainer: {
     alignItems: "center",
@@ -153,15 +161,12 @@ const styles = StyleSheet.create({
   promptText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "black",
   },
   inputContainer: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#999",
     borderRadius: 8,
     padding: 16,
-    backgroundColor: "#F5F5F5",
     marginBottom: 24,
   },
   dimmed: {
@@ -170,7 +175,6 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
     textAlignVertical: "top",
   },
   buttonRow: {
@@ -179,14 +183,13 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    backgroundColor: "#D3D3D3",
     borderRadius: 8,
+    borderWidth: 1,
     paddingVertical: 14,
     alignItems: "center",
   },
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "black",
   },
 });

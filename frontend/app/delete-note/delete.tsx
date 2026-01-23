@@ -9,10 +9,12 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { deleteNote } from "../../lib/api";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function DeleteNote() {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); // Get note ID from URL params
+  const { colors } = useTheme();
+  const { id } = useLocalSearchParams();
   const [deleting, setDeleting] = useState(false);
 
   const handleKeepIt = () => {
@@ -38,24 +40,24 @@ export default function DeleteNote() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { backgroundColor: colors.primary }]}>
+      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
 
       {/* Warning icon */}
       <View style={styles.iconContainer}>
-        <View style={styles.iconCircle}>
-          <Text style={styles.iconText}>!</Text>
+        <View style={[styles.iconCircle, { backgroundColor: colors.primaryDark }]}>
+          <Text style={[styles.iconText, { color: colors.primary }]}>!</Text>
         </View>
       </View>
 
       {/* Main message */}
-      <Text style={styles.mainText}>
+      <Text style={[styles.mainText, { color: colors.text }]}>
         Are you sure you want to{'\n'}DELETE this NOTE ?
       </Text>
 
       {/* Info box */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>
+      <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.text }]}>
+        <Text style={[styles.infoText, { color: colors.text }]}>
           All of your data in this note will be{'\n'}
           <Text style={styles.boldText}>permanently deleted.</Text>
         </Text>
@@ -67,19 +69,23 @@ export default function DeleteNote() {
       {/* Buttons */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
-          style={styles.keepButton}
+          style={[styles.keepButton, { backgroundColor: colors.card, borderColor: colors.text }]}
           onPress={handleKeepIt}
           disabled={deleting}
         >
-          <Text style={styles.keepButtonText}>Keep it!</Text>
+          <Text style={[styles.keepButtonText, { color: colors.text }]}>Keep it!</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.deleteButton, deleting && styles.deleteButtonDisabled]}
+          style={[
+            styles.deleteButton, 
+            { backgroundColor: colors.error, borderColor: colors.text },
+            deleting && styles.deleteButtonDisabled
+          ]}
           onPress={handleDelete}
           disabled={deleting}
         >
-          <Text style={styles.deleteButtonText}>
+          <Text style={[styles.deleteButtonText, { color: colors.text }]}>
             {deleting ? "Deleting..." : "Delete"}
           </Text>
         </TouchableOpacity>
@@ -91,7 +97,6 @@ export default function DeleteNote() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFB052',
     paddingHorizontal: 16,
     paddingVertical: 16,
     alignItems: 'center',
@@ -104,35 +109,29 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#723F08',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconText: {
     fontSize: 72,
     fontWeight: 'bold',
-    color: '#FFB052',
   },
   mainText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#502900',
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 36,
   },
   infoBox: {
-    backgroundColor: '#F8D5AB',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#502900',
     paddingVertical: 24,
     paddingHorizontal: 20,
     width: '100%',
   },
   infoText: {
     fontSize: 18,
-    color: '#502900',
     textAlign: 'center',
     lineHeight: 26,
   },
@@ -147,24 +146,19 @@ const styles = StyleSheet.create({
   },
   keepButton: {
     flex: 1,
-    backgroundColor: '#F8D5AB',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#502900',
     paddingVertical: 18,
     alignItems: 'center',
   },
   keepButtonText: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#502900',
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: '#FF5500',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#502900',
     paddingVertical: 18,
     alignItems: 'center',
   },
@@ -174,6 +168,5 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#502900',
   },
 });

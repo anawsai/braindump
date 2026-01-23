@@ -11,13 +11,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { mode, colors, toggleTheme } = useTheme();
 
   // === UI toggles ===
   const [keepPrivate, setKeepPrivate] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [weeklyReview, setWeeklyReview] = useState(true);
   const [taskReminders, setTaskReminders] = useState(true);
   const [stressAlerts, setStressAlerts] = useState(true);
@@ -80,83 +81,89 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.background }]} 
+      contentContainerStyle={styles.content}
+    >
       {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
-          <Ionicons name="chevron-back" size={24} color="#000000" />
+          <Ionicons name="chevron-back" size={24} color={colors.icon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
         <View style={{ width: 22 }} />
       </View>
 
       {/* Account */}
-      <Text style={styles.sectionTitle}>Account</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.surface }]}
         onPress={() => router.push("/edit-profile")}
         activeOpacity={0.7}
       >
-        <View style={styles.avatar}>
+        <View style={[styles.avatar, { backgroundColor: colors.primaryDark }]}>
           <Text style={styles.avatarText}>
             {profileInitials || "JJ"}
           </Text>
         </View>
         <View>
-          <Text style={styles.accountName}>
+          <Text style={[styles.accountName, { color: colors.text }]}>
             {profileName || "Jeffrey Jones"}
           </Text>
-          <Text style={styles.accountEmail}>
+          <Text style={[styles.accountEmail, { color: colors.textSecondary }]}>
             {profileEmail || "jeffreyjones@gmail.com"}
           </Text>
         </View>
       </TouchableOpacity>
 
       {/* Privacy / Appearance */}
-      <Text style={styles.sectionTitle}>Privacy/ Appearance</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy/ Appearance</Text>
 
       <SettingRow
-        icon={<Ionicons name="shield-checkmark-outline" size={24} />}
+        icon={<Ionicons name="shield-checkmark-outline" size={24} color={colors.icon} />}
         label="Keep personal data private"
         value={keepPrivate}
         onValueChange={setKeepPrivate}
       />
 
       <SettingRow
-        icon={<Ionicons name="sunny-outline" size={24} />}
-        label="Light/Dark Mode"
-        value={darkMode}
-        onValueChange={setDarkMode}
+        icon={<Ionicons name={mode === 'dark' ? "moon" : "sunny-outline"} size={24} color={colors.icon} />}
+        label={mode === 'dark' ? "Dark Mode" : "Light Mode"}
+        value={mode === 'dark'}
+        onValueChange={toggleTheme}
       />
 
       {/* Notifications */}
-      <Text style={styles.sectionTitle}>Notification</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Notification</Text>
 
       <SettingRow
-        icon={<Ionicons name="calendar-outline" size={24} />}
+        icon={<Ionicons name="calendar-outline" size={24} color={colors.icon} />}
         label="Weekly Review"
         value={weeklyReview}
         onValueChange={setWeeklyReview}
       />
 
       <SettingRow
-        icon={<Ionicons name="notifications-outline" size={24} />}
+        icon={<Ionicons name="notifications-outline" size={24} color={colors.icon} />}
         label="Task Reminders"
         value={taskReminders}
         onValueChange={setTaskReminders}
       />
 
       <SettingRow
-        icon={<Ionicons name="sparkles-outline" size={24} />}
+        icon={<Ionicons name="sparkles-outline" size={24} color={colors.icon} />}
         label="Stress Alerts"
         value={stressAlerts}
         onValueChange={setStressAlerts}
       />
 
       {/* Sign Out */}
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Ionicons name="log-out-outline" size={22} style={styles.signOutIcon} />
-        <Text style={styles.signOutText}>Sign Out</Text>
+      <TouchableOpacity 
+        style={[styles.signOutButton, { backgroundColor: colors.primaryDark }]} 
+        onPress={handleSignOut}
+      >
+        <Ionicons name="log-out-outline" size={22} color={colors.icon} style={styles.signOutIcon} />
+        <Text style={[styles.signOutText, { color: colors.text }]}>Sign Out</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -173,16 +180,18 @@ function SettingRow({
   value: boolean;
   onValueChange: (val: boolean) => void;
 }) {
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.settingCard}>
+    <View style={[styles.settingCard, { backgroundColor: colors.surface }]}>
       <View style={styles.settingLeft}>
         {icon}
-        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: "#d4d4d4", true: "#111827" }}
+        trackColor={{ false: colors.border, true: colors.primaryDark }}
         thumbColor="#ffffff"
       />
     </View>
@@ -192,7 +201,6 @@ function SettingRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   content: {
     paddingHorizontal: 24,
@@ -208,19 +216,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#000000",
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000000",
     marginBottom: 8,
     marginTop: 18,
   },
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f7f4f1",
     borderRadius: 12,
     padding: 16,
   },
@@ -228,7 +233,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 999,
-    backgroundColor: "#FF8D05",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -240,18 +244,15 @@ const styles = StyleSheet.create({
   accountName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
   },
   accountEmail: {
     fontSize: 12,
-    color: "#6b7280",
     marginTop: 2,
   },
   settingCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#f7f4f1",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -264,7 +265,6 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontSize: 15,
-    color: "#111827",
   },
   signOutButton: {
     flexDirection: "row",
@@ -273,7 +273,6 @@ const styles = StyleSheet.create({
     marginTop: 32,
     borderRadius: 14,
     paddingVertical: 14,
-    backgroundColor: "#FF8D05",
   },
   signOutIcon: {
     marginRight: 8,
@@ -281,7 +280,5 @@ const styles = StyleSheet.create({
   signOutText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
   },
 });
-

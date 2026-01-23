@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getWeeklyNotes, analyzeWeeklyNotes } from "../../lib/api";
 import { useLoading } from '../../context/LoadingContext';
+import { useTheme } from '../../context/ThemeContext';
 
 type CategoryData = {
   category: string;
@@ -31,6 +32,7 @@ type AnalysisData = {
 export default function ReviewPage() {
   const router = useRouter();
   const loading = useLoading();
+  const { colors } = useTheme();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [weeklyNotes, setWeeklyNotes] = useState<any[]>([]);
 
@@ -40,7 +42,7 @@ export default function ReviewPage() {
 
   async function loadWeeklyData() {
     try {
-      loading.start('Analyzing your week...'); // ← Shows orange loading screen
+      loading.start('Analyzing your week...');
       const notes = await getWeeklyNotes();
       setWeeklyNotes(notes);
       const analysisData = analyzeWeeklyNotes(notes);
@@ -48,7 +50,7 @@ export default function ReviewPage() {
     } catch (error) {
       console.error("Failed to load weekly data:", error);
     } finally {
-      loading.stop(); // ← Hides loading screen after 2 seconds minimum
+      loading.stop();
     }
   }
 
@@ -63,7 +65,6 @@ export default function ReviewPage() {
 
     let summary = `This week you created ${totalNotes} brain dump${totalNotes > 1 ? "s" : ""}, `;
 
-    // Describe category focus
     if (topPercent > 60) {
       summary += `with a strong focus on ${topCat} (${topPercent}% of your thoughts). `;
     } else if (categoryPercentages.length > 1) {
@@ -73,12 +74,10 @@ export default function ReviewPage() {
       summary += `focused on ${topCat}. `;
     }
 
-    // Add themes if we found any
     if (themes && themes.length > 0) {
       const themeList = themes.slice(0, 5).join(', ');
       summary += `\n\nRecurring themes in your notes include: ${themeList}. `;
       
-      // Add context based on category + themes
       if (topCat === "Work") {
         summary += `These work-related topics seem to be occupying significant mental space. `;
       } else if (topCat === "Personal") {
@@ -90,7 +89,6 @@ export default function ReviewPage() {
       }
     }
 
-    // Activity pattern insight
     const activeDays = Object.values(analysis.dailyCounts).filter(c => c > 0).length;
     if (activeDays >= 5) {
       summary += `\n\nYou've been consistently brain dumping ${activeDays} days this week - excellent habit building!`;
@@ -109,7 +107,6 @@ export default function ReviewPage() {
     if (!analysis) return 0;
     const count = analysis.dailyCounts[day] || 0;
     const maxCount = Math.max(...Object.values(analysis.dailyCounts), 1);
-    // Scale to max height of 120
     return (count / maxCount) * 120;
   }
 
@@ -125,107 +122,102 @@ export default function ReviewPage() {
     return icons[category] || "star";
   }
 
-  // Don't show the old ActivityIndicator anymore - the orange loading screen handles it
   if (!analysis) {
-    return null; // Return nothing while loading (orange screen shows instead)
+    return null;
   }
 
-  // Get top 2 categories for display
   const topCategories = analysis?.categoryPercentages.slice(0, 2) || [];
   const dailyOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
+          <Ionicons name="arrow-back" size={24} color={colors.icon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Review</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Review</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.scrollContent}>
         {/* Weekly Summary */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Weekly Summary</Text>
-          <Text style={styles.summaryText}>{generateWeeklySummary()}</Text>
+        <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.summaryTitle, { color: colors.text }]}>Weekly Summary</Text>
+          <Text style={[styles.summaryText, { color: colors.text }]}>{generateWeeklySummary()}</Text>
         </View>
 
         {/* Stats Row */}
         <View style={styles.statsRow}>
-          {/* Brain Dumps */}
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.brainIcon}>
               <Image
                 source={require("../../assets/reviewbrainicon.png")}
                 style={styles.brainImage}
               />
             </View>
-            <Text style={styles.statNumber}>{analysis?.totalNotes || 0}</Text>
-            <Text style={styles.statLabel}>Brain Dumps</Text>
+            <Text style={[styles.statNumber, { color: colors.text }]}>{analysis?.totalNotes || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Brain Dumps</Text>
           </View>
 
-          {/* Categories */}
-          <View style={styles.statCard}>
-            <View style={styles.categoryIcon}>
-              <Ionicons name="pie-chart" size={40} color="#FFFFFF" />
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.categoryIcon, { backgroundColor: colors.text }]}>
+              <Ionicons name="pie-chart" size={40} color={colors.background} />
             </View>
-            <Text style={styles.statNumber}>
+            <Text style={[styles.statNumber, { color: colors.text }]}>
               {analysis?.categoryPercentages.length || 0}
             </Text>
-            <Text style={styles.statLabel}>Categories</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Categories</Text>
           </View>
         </View>
 
         {/* Thinking Patterns */}
-        <Text style={styles.sectionTitle}>Thinking Patterns</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Thinking Patterns</Text>
 
         {topCategories.length > 0 ? (
           topCategories.map((cat, idx) => (
-            <View key={idx} style={styles.patternCard}>
-              <View style={styles.patternBadge}>
+            <View key={idx} style={[styles.patternCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.patternBadge, { backgroundColor: colors.primary, borderColor: colors.border }]}>
                 <Ionicons
                   name={getCategoryIcon(cat.category) as any}
                   size={18}
-                  color="#000000"
+                  color={colors.icon}
                 />
-                <Text style={styles.patternLabel}>{cat.category}</Text>
+                <Text style={[styles.patternLabel, { color: colors.text }]}>{cat.category}</Text>
               </View>
-              <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBarContainer, { backgroundColor: colors.surface }]}>
                 <View
-                  style={[styles.progressBar, { width: `${cat.percentage}%` }]}
+                  style={[styles.progressBar, { width: `${cat.percentage}%`, backgroundColor: colors.primary }]}
                 />
               </View>
-              <Text style={styles.percentText}>{cat.percentage}%</Text>
+              <Text style={[styles.percentText, { color: colors.text }]}>{cat.percentage}%</Text>
             </View>
           ))
         ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
+          <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
               No notes yet this week to analyze
             </Text>
           </View>
         )}
 
         {/* Activity Trends */}
-        <Text style={styles.sectionTitle}>Daily Activity</Text>
-        <View style={styles.chartCard}>
-          {/* Add dotted lines */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Activity</Text>
+        <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.chartGridLines}>
-            <View style={styles.dottedLine} />
-            <View style={styles.dottedLine} />
-            <View style={styles.dottedLine} />
-            <View style={styles.dottedLine} />
+            <View style={[styles.dottedLine, { borderColor: colors.border }]} />
+            <View style={[styles.dottedLine, { borderColor: colors.border }]} />
+            <View style={[styles.dottedLine, { borderColor: colors.border }]} />
+            <View style={[styles.dottedLine, { borderColor: colors.border }]} />
           </View>
           <View style={styles.chartBars}>
             {dailyOrder.map((day, idx) => (
               <View key={idx} style={styles.barContainer}>
                 <View
-                  style={[styles.bar, { height: getDailyBarHeight(day) }]}
+                  style={[styles.bar, { height: getDailyBarHeight(day), backgroundColor: colors.primary }]}
                 />
-                <Text style={styles.barLabel}>{day[0]}</Text>
-                <Text style={styles.barCount}>
+                <Text style={[styles.barLabel, { color: colors.text }]}>{day[0]}</Text>
+                <Text style={[styles.barCount, { color: colors.textSecondary }]}>
                   {analysis?.dailyCounts[day] || 0}
                 </Text>
               </View>
@@ -233,25 +225,25 @@ export default function ReviewPage() {
           </View>
         </View>
 
-        {/* Reflections & Insights */}
+        {/* Reflections & Insights - COMPLETE VERSION */}
         {analysis && analysis.totalNotes > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Reflections for the Week</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Reflections for the Week</Text>
             
             {/* Primary reflection based on dominant category */}
             {analysis.topCategory && analysis.topCategory.percentage > 60 && (
-              <View style={styles.recommendationCard}>
+              <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons
                   name={getCategoryIcon(analysis.topCategory.category) as any}
                   size={24}
-                  color="#FFB052"
+                  color={colors.primary}
                   style={{ marginRight: 12 }}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.recommendationTitle}>
+                  <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                     Reflect on: {analysis.topCategory.category}
                   </Text>
-                  <Text style={styles.recommendationSubtext}>
+                  <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                     {analysis.topCategory.percentage}% of your mental energy went to {analysis.topCategory.category.toLowerCase()} matters. 
                     {analysis.topCategory.category === "Work" && " Are there specific projects causing stress? What progress have you made? What can you delegate or simplify?"}
                     {analysis.topCategory.category === "Personal" && " What patterns do you notice in your personal thoughts? What's bringing you joy? What needs attention?"}
@@ -266,18 +258,18 @@ export default function ReviewPage() {
 
             {/* Theme-based reflection */}
             {analysis.themes && analysis.themes.length > 0 && (
-              <View style={styles.recommendationCard}>
+              <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons
                   name="book"
                   size={24}
-                  color="#FFB052"
+                  color={colors.primary}
                   style={{ marginRight: 12 }}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.recommendationTitle}>
+                  <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                     Recurring themes to explore
                   </Text>
-                  <Text style={styles.recommendationSubtext}>
+                  <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                     You've mentioned: {analysis.themes.slice(0, 4).join(', ')}. 
                     {"\n\n"}These topics keep coming up. What's the common thread? 
                     What's unresolved? Journal about why these themes matter to you right now.
@@ -290,18 +282,18 @@ export default function ReviewPage() {
             {analysis.categoryPercentages.length >= 3 && 
              analysis.topCategory && 
              analysis.topCategory.percentage < 50 && (
-              <View style={styles.recommendationCard}>
+              <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons
                   name="git-network"
                   size={24}
-                  color="#FFB052"
+                  color={colors.primary}
                   style={{ marginRight: 12 }}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.recommendationTitle}>
+                  <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                     Notice: Balanced attention
                   </Text>
-                  <Text style={styles.recommendationSubtext}>
+                  <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                     Your thoughts span {analysis.categoryPercentages.length} life areas. 
                     This mental diversity is healthy! Consider: Are you giving each area 
                     the attention it deserves? What feels neglected? What's thriving?
@@ -315,18 +307,18 @@ export default function ReviewPage() {
               const activeDays = Object.values(analysis.dailyCounts).filter(c => c > 0).length;
               if (activeDays >= 5) {
                 return (
-                  <View style={styles.recommendationCard}>
+                  <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Ionicons
                       name="trophy"
                       size={24}
-                      color="#FFB052"
+                      color={colors.primary}
                       style={{ marginRight: 12 }}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.recommendationTitle}>
+                      <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                         Celebrate: Strong consistency
                       </Text>
-                      <Text style={styles.recommendationSubtext}>
+                      <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                         You brain dumped {activeDays} days this week! This regular practice 
                         helps you process thoughts before they become overwhelming. How has 
                         this habit impacted your mental clarity?
@@ -336,18 +328,18 @@ export default function ReviewPage() {
                 );
               } else if (activeDays <= 2) {
                 return (
-                  <View style={styles.recommendationCard}>
+                  <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Ionicons
                       name="calendar"
                       size={24}
-                      color="#FFB052"
+                      color={colors.primary}
                       style={{ marginRight: 12 }}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.recommendationTitle}>
+                      <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                         Consider: Daily brain dumps
                       </Text>
-                      <Text style={styles.recommendationSubtext}>
+                      <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                         You dumped thoughts on {activeDays} day{activeDays > 1 ? 's' : ''} this week. 
                         Try making it a daily habit - even 2 minutes before bed. What's preventing 
                         you from doing this more regularly?
@@ -367,18 +359,18 @@ export default function ReviewPage() {
               );
               return (
                 maxDay.count >= 3 && (
-                  <View style={styles.recommendationCard}>
+                  <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Ionicons
                       name="flame"
                       size={24}
-                      color="#FF5500"
+                      color={colors.error}
                       style={{ marginRight: 12 }}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.recommendationTitle}>
+                      <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                         Notice: Peak activity on {maxDay.day}
                       </Text>
-                      <Text style={styles.recommendationSubtext}>
+                      <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                         You had {maxDay.count} brain dumps on {maxDay.day}. What happened 
                         that day? Was something stressful? Inspiring? Understanding your 
                         patterns helps you manage your mental load better.
@@ -393,18 +385,18 @@ export default function ReviewPage() {
             {analysis.topCategory && 
              analysis.topCategory.category === "Ideas" && 
              analysis.topCategory.count >= 3 && (
-              <View style={styles.recommendationCard}>
+              <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons
                   name="rocket"
                   size={24}
-                  color="#FFB052"
+                  color={colors.primary}
                   style={{ marginRight: 12 }}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.recommendationTitle}>
+                  <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                     Challenge: From ideas to action
                   </Text>
-                  <Text style={styles.recommendationSubtext}>
+                  <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                     You've captured {analysis.topCategory.count} ideas this week. 
                     Pick ONE to act on today - even a tiny first step. Which idea 
                     keeps pulling at you? What's the smallest thing you could do right now?
@@ -417,18 +409,18 @@ export default function ReviewPage() {
             {analysis.topCategory && 
              analysis.topCategory.category === "Work" && 
              analysis.topCategory.percentage > 70 && (
-              <View style={styles.recommendationCard}>
+              <View style={[styles.recommendationCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons
                   name="alert-circle"
                   size={24}
-                  color="#FF5500"
+                  color={colors.error}
                   style={{ marginRight: 12 }}
                 />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.recommendationTitle}>
+                  <Text style={[styles.recommendationTitle, { color: colors.text }]}>
                     Reflect: Work-life integration
                   </Text>
-                  <Text style={styles.recommendationSubtext}>
+                  <Text style={[styles.recommendationSubtext, { color: colors.textSecondary }]}>
                     {analysis.topCategory.percentage}% of your thoughts are work-related. 
                     Is this intentional? What personal needs might you be overlooking? 
                     Schedule one non-work activity this week that brings you joy.
@@ -448,7 +440,6 @@ export default function ReviewPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
@@ -457,12 +448,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#000000",
   },
   scrollContent: {
     flex: 1,
@@ -470,22 +459,18 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   summaryCard: {
-    backgroundColor: "#FFDBB0",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000000",
     padding: 20,
     marginBottom: 20,
   },
   summaryTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#000000",
     marginBottom: 12,
   },
   summaryText: {
     fontSize: 16,
-    color: "#000000",
     lineHeight: 24,
   },
   statsRow: {
@@ -495,10 +480,8 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#FFDBB0",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000000",
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
@@ -516,7 +499,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -524,25 +506,20 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#000000",
   },
   statLabel: {
     fontSize: 14,
-    color: "#666666",
     marginTop: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#000000",
     marginBottom: 12,
     marginTop: 8,
   },
   patternCard: {
-    backgroundColor: "#FFDBB0",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000000",
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
@@ -552,56 +529,45 @@ const styles = StyleSheet.create({
   patternBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFB052",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#000000",
     gap: 6,
   },
   patternLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000000",
   },
   progressBarContainer: {
     flex: 1,
     height: 12,
-    backgroundColor: "#FFE6C7",
     borderRadius: 6,
     overflow: "hidden",
   },
   progressBar: {
     height: "100%",
-    backgroundColor: "#FFB052",
     borderRadius: 6,
   },
   percentText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#000000",
     width: 45,
     textAlign: "right",
   },
   emptyCard: {
-    backgroundColor: "#F5F5F5",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     padding: 24,
     alignItems: "center",
   },
   emptyText: {
     fontSize: 16,
-    color: "#999999",
     textAlign: "center",
   },
   chartCard: {
-    backgroundColor: "#FFDBB0",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000000",
     paddingTop: 15,
     paddingBottom: 8,
     paddingHorizontal: 20,
@@ -621,7 +587,6 @@ const styles = StyleSheet.create({
     height: 1,
     borderStyle: "dashed",
     borderWidth: 1,
-    borderColor: "#FFFFFF",
     width: "100%",
   },
   chartBars: {
@@ -639,7 +604,6 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 24,
-    backgroundColor: "#FFB052",
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     marginBottom: 4,
@@ -648,18 +612,14 @@ const styles = StyleSheet.create({
   barLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000000",
     marginBottom: 2,
   },
   barCount: {
     fontSize: 12,
-    color: "#666666",
   },
   recommendationCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000000",
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
@@ -668,12 +628,10 @@ const styles = StyleSheet.create({
   recommendationTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#000000",
     marginBottom: 4,
   },
   recommendationSubtext: {
     fontSize: 14,
-    color: "#666666",
     lineHeight: 20,
   },
 });

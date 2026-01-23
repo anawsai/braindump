@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getRelatedNotes } from "../../lib/api";
+import { useTheme } from "../../context/ThemeContext";
 
 type RelatedNote = {
   id: number;
@@ -35,6 +36,7 @@ type RelatedNotesData = {
 
 export default function RelatedNotes() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   
   const [loading, setLoading] = useState(true);
@@ -64,9 +66,9 @@ export default function RelatedNotes() {
   }
 
   function getSimilarityColor(similarity: number): string {
-    if (similarity >= 0.8) return "#4CAF50"; // High similarity - green
-    if (similarity >= 0.6) return "#FFB052"; // Medium similarity - orange
-    return "#FF8D05"; // Lower similarity - darker orange
+    if (similarity >= 0.8) return colors.success;
+    if (similarity >= 0.6) return colors.primary;
+    return colors.primaryDark;
   }
 
   function getSimilarityLabel(similarity: number): string {
@@ -77,22 +79,22 @@ export default function RelatedNotes() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FFB052" />
-        <Text style={styles.loadingText}>Finding related thoughts...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Finding related thoughts...</Text>
       </View>
     );
   }
 
   if (!data || data.related_notes.length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={26} color="#000" />
+            <Ionicons name="chevron-back" size={26} color={colors.icon} />
           </TouchableOpacity>
-          <Text style={styles.headerCenter}>Related Notes</Text>
+          <Text style={[styles.headerCenter, { color: colors.text }]}>Related Notes</Text>
           <View style={{ width: 26 }} />
         </View>
 
@@ -101,8 +103,8 @@ export default function RelatedNotes() {
             source={require("../../assets/mascot.png")}
             style={styles.mascot}
           />
-          <Text style={styles.emptyTitle}>No Related Notes Found</Text>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Related Notes Found</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
             This note doesn't have any similar notes yet. As you add more notes, 
             we'll find connections between your thoughts!
           </Text>
@@ -112,28 +114,28 @@ export default function RelatedNotes() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={26} color="#000" />
+          <Ionicons name="chevron-back" size={26} color={colors.icon} />
         </TouchableOpacity>
-        <Text style={styles.headerCenter}>Related Notes</Text>
+        <Text style={[styles.headerCenter, { color: colors.text }]}>Related Notes</Text>
         <View style={{ width: 26 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Current Note Summary */}
-        <View style={styles.sourceNoteCard}>
-          <Text style={styles.sectionLabel}>Currently Viewing</Text>
-          <Text style={styles.sourceNoteTitle}>{data.source_note.title}</Text>
-          <Text style={styles.sourceNoteContent} numberOfLines={2}>
+        <View style={[styles.sourceNoteCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Currently Viewing</Text>
+          <Text style={[styles.sourceNoteTitle, { color: colors.text }]}>{data.source_note.title}</Text>
+          <Text style={[styles.sourceNoteContent, { color: colors.textSecondary }]} numberOfLines={2}>
             {data.source_note.content}
           </Text>
         </View>
 
         {/* Found Count */}
-        <Text style={styles.foundText}>
+        <Text style={[styles.foundText, { color: colors.text }]}>
           Found {data.related_notes.length} related thought{data.related_notes.length !== 1 ? 's' : ''}!
         </Text>
 
@@ -144,12 +146,12 @@ export default function RelatedNotes() {
 
         {/* Common Themes */}
         {data.common_themes.length > 0 && (
-          <View style={styles.themesContainer}>
-            <Text style={styles.themesTitle}>Common Themes</Text>
+          <View style={[styles.themesContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.themesTitle, { color: colors.text }]}>Common Themes</Text>
             <View style={styles.themesRow}>
               {data.common_themes.map((theme, idx) => (
-                <View key={idx} style={styles.themeTag}>
-                  <Text style={styles.themeText}>{theme}</Text>
+                <View key={idx} style={[styles.themeTag, { backgroundColor: colors.primary, borderColor: colors.border }]}>
+                  <Text style={[styles.themeText, { color: colors.text }]}>{theme}</Text>
                 </View>
               ))}
             </View>
@@ -160,7 +162,7 @@ export default function RelatedNotes() {
         {data.related_notes.map((note, idx) => (
           <TouchableOpacity
             key={note.id}
-            style={styles.noteCard}
+            style={[styles.noteCard, { backgroundColor: colors.primary, borderColor: colors.border }]}
             onPress={() => router.push({ 
               pathname: "/note-detail/[id]", 
               params: { id: String(note.id) } 
@@ -168,11 +170,11 @@ export default function RelatedNotes() {
             activeOpacity={0.7}
           >
             <View style={styles.noteHeader}>
-              <Text style={styles.noteTitle}>{note.title || "Untitled"}</Text>
+              <Text style={[styles.noteTitle, { color: colors.text }]}>{note.title || "Untitled"}</Text>
               <View 
                 style={[
                   styles.similarityBadge, 
-                  { backgroundColor: getSimilarityColor(note.similarity) }
+                  { backgroundColor: getSimilarityColor(note.similarity), borderColor: colors.border }
                 ]}
               >
                 <Text style={styles.similarityText}>
@@ -181,16 +183,16 @@ export default function RelatedNotes() {
               </View>
             </View>
 
-            <Text style={styles.noteBody} numberOfLines={3}>
+            <Text style={[styles.noteBody, { color: colors.text }]} numberOfLines={3}>
               {note.content}
             </Text>
 
             <View style={styles.noteFooter}>
-              <View style={styles.categoryBadge}>
-                <Ionicons name="star" size={12} color="#000" />
-                <Text style={styles.categoryText}>{note.category}</Text>
+              <View style={[styles.categoryBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Ionicons name="star" size={12} color={colors.icon} />
+                <Text style={[styles.categoryText, { color: colors.text }]}>{note.category}</Text>
               </View>
-              <Text style={styles.similarityLabel}>
+              <Text style={[styles.similarityLabel, { color: colors.textSecondary }]}>
                 {getSimilarityLabel(note.similarity)}
               </Text>
             </View>
@@ -201,25 +203,20 @@ export default function RelatedNotes() {
   );
 }
 
-/* STYLES */
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
 
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
   },
 
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#666",
   },
 
   emptyContainer: {
@@ -232,14 +229,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#000",
     marginTop: 16,
     marginBottom: 8,
   },
 
   emptyText: {
     fontSize: 16,
-    color: "#666",
     textAlign: "center",
     lineHeight: 24,
   },
@@ -251,7 +246,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
   },
 
   headerCenter: {
@@ -267,18 +261,15 @@ const styles = StyleSheet.create({
 
   sourceNoteCard: {
     width: "100%",
-    backgroundColor: "#F7F4F1",
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     marginBottom: 20,
   },
 
   sectionLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#666",
     textTransform: "uppercase",
     marginBottom: 8,
   },
@@ -291,12 +282,10 @@ const styles = StyleSheet.create({
 
   sourceNoteContent: {
     fontSize: 14,
-    color: "#666",
   },
 
   foundText: {
     fontSize: 16,
-    color: "#444",
     marginBottom: 16,
     fontWeight: "600",
   },
@@ -310,11 +299,9 @@ const styles = StyleSheet.create({
 
   themesContainer: {
     width: "100%",
-    backgroundColor: "#FFDBB0",
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000",
     marginBottom: 20,
   },
 
@@ -331,27 +318,22 @@ const styles = StyleSheet.create({
   },
 
   themeTag: {
-    backgroundColor: "#FFB052",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#000",
   },
 
   themeText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#000",
   },
 
   noteCard: {
     width: "100%",
-    backgroundColor: "#FFB052",
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000",
     marginBottom: 16,
   },
 
@@ -374,7 +356,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#000",
   },
 
   similarityText: {
@@ -398,12 +379,10 @@ const styles = StyleSheet.create({
   categoryBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#000",
     gap: 4,
   },
 
@@ -415,6 +394,5 @@ const styles = StyleSheet.create({
   similarityLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#333",
   },
 });

@@ -9,65 +9,72 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function DeleteAccount() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [deleting, setDeleting] = useState(false);
 
   const handleKeepIt = () => {
     router.back();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     Alert.alert(
-      "Delete Account?",
-      "This action cannot be undone.",
+      "Are you absolutely sure?",
+      "This action cannot be undone. All your data will be permanently deleted.",
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: actuallyDelete }
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete Forever",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              const { error } = await supabase.auth.signOut();
+              if (error) {
+                Alert.alert("Error", error.message);
+              } else {
+                Alert.alert("Account Deleted", "Your account has been deleted successfully.");
+                router.replace('/login');
+              }
+            } catch (err: any) {
+              Alert.alert("Error", err?.message ?? String(err));
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
       ]
     );
   };
 
-  const actuallyDelete = async () => {
-    try {
-      setDeleting(true);
-
-      // TODO: Replace with secure RPC / Edge Function
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
-      Alert.alert("Account Deleted", "Your account has been deleted.");
-      router.replace("/login");
-
-    } catch (err: any) {
-      Alert.alert("Error", err?.message ?? "Failed to delete account.");
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { backgroundColor: colors.primary }]}>
+      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
 
       {/* Warning icon */}
       <View style={styles.iconContainer}>
-        <View style={styles.iconCircle}>
-          <Text style={styles.iconText}>!</Text>
+        <View style={[styles.iconCircle, { backgroundColor: colors.error }]}>
+          <Text style={[styles.iconText, { color: colors.background }]}>!</Text>
         </View>
       </View>
 
       {/* Main message */}
-      <Text style={styles.mainText}>
-        Are you sure you want to{"\n"}DELETE this ACCOUNT ?
+      <Text style={[styles.mainText, { color: colors.text }]}>
+        Are you sure you want to{'\n'}DELETE your ACCOUNT?
       </Text>
 
       {/* Info box */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>
-          All of your account data will be{"\n"}
-          <Text style={styles.boldText}>permanently deleted.</Text>
+      <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.text }]}>
+        <Text style={[styles.infoText, { color: colors.text }]}>
+          All of your data will be{'\n'}
+          <Text style={styles.boldText}>permanently deleted</Text>{'\n'}
+          and cannot be recovered.
         </Text>
       </View>
 
@@ -77,19 +84,23 @@ export default function DeleteAccount() {
       {/* Buttons */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
-          style={styles.keepButton}
+          style={[styles.keepButton, { backgroundColor: colors.card, borderColor: colors.text }]}
           onPress={handleKeepIt}
           disabled={deleting}
         >
-          <Text style={styles.keepButtonText}>Keep Account!</Text>
+          <Text style={[styles.keepButtonText, { color: colors.text }]}>Keep it!</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.deleteButton, deleting && styles.deleteButtonDisabled]}
+          style={[
+            styles.deleteButton, 
+            { backgroundColor: colors.error, borderColor: colors.text },
+            deleting && styles.deleteButtonDisabled
+          ]}
           onPress={handleDelete}
           disabled={deleting}
         >
-          <Text style={styles.deleteButtonText}>
+          <Text style={[styles.deleteButtonText, { color: colors.background }]}>
             {deleting ? "Deleting..." : "Delete"}
           </Text>
         </TouchableOpacity>
@@ -101,11 +112,8 @@ export default function DeleteAccount() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFB052',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    paddingTop: 35,
-    paddingBottom: 35,
     alignItems: 'center',
   },
   iconContainer: {
@@ -116,35 +124,29 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#723F08',
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconText: {
     fontSize: 72,
     fontWeight: 'bold',
-    color: '#FFB052',
   },
   mainText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#502900',
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 36,
   },
   infoBox: {
-    backgroundColor: '#F8D5AB',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#502900',
     paddingVertical: 24,
-    paddingHorizontal: 10,
-    width: '60%',
+    paddingHorizontal: 20,
+    width: '100%',
   },
   infoText: {
     fontSize: 18,
-    color: '#502900',
     textAlign: 'center',
     lineHeight: 26,
   },
@@ -153,30 +155,25 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    width: '60%',
+    width: '100%',
     gap: 16,
-    marginBottom: 20,
+    marginBottom: 40,
   },
   keepButton: {
     flex: 1,
-    backgroundColor: '#F8D5AB',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#502900',
     paddingVertical: 18,
     alignItems: 'center',
   },
   keepButtonText: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#502900',
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: '#FF5500',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#502900',
     paddingVertical: 18,
     alignItems: 'center',
   },
@@ -186,7 +183,5 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#502900',
   },
 });
-
