@@ -215,6 +215,9 @@ function LayoutContent() {
 
   // Check if current page is an auth page (no nav shown)
   const isAuthPage = AUTH_PAGES.some(page => pathname === page || pathname.startsWith(page));
+  
+  // Check if current page is the homepage (for styling)
+  const isHomePage = pathname === '/home';
 
   function applySessionUser(session: any | null) {
     if (!session || !session.user) {
@@ -388,6 +391,7 @@ function LayoutContent() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setShowMenu(true);
+        setCollapsed(true); // Ensure sidebar is closed on initial load
         applySessionUser(session);
         router.replace('/home');
         await loadNoteCount();
@@ -424,6 +428,7 @@ function LayoutContent() {
         // Only redirect on SIGNED_IN or SIGNED_OUT
         if (event === 'SIGNED_IN' && session) {
           setShowMenu(true);
+          setCollapsed(true); // Ensure sidebar is closed on login
           applySessionUser(session);
           router.replace('/home');
           await loadNoteCount();
@@ -497,6 +502,9 @@ function LayoutContent() {
     );
   }
 
+  // Determine header icon color - white on homepage (orange bg), normal text color elsewhere
+  const headerIconColor = isHomePage ? '#FFFFFF' : colors.text;
+
   // Always use sidebar layout (removed mobile bottom tabs)
   return (
     <View style={[styles.container, { backgroundColor: colors.background }, isMobile && styles.containerMobile]}>
@@ -515,9 +523,18 @@ function LayoutContent() {
           isMobile={isMobile}
         />
       )}
-      <View style={[styles.content, { backgroundColor: colors.background }, isMobile && styles.contentMobile]}>
-        {showMenu && !isAuthPage && (
-          <View style={[styles.headerRow, { borderBottomColor: colors.border }, isMobile && styles.headerRowMobile]}>
+      <View style={[
+          styles.content, 
+          { backgroundColor: colors.background }, 
+          isMobile && styles.contentMobile,
+          isHomePage && styles.contentHomepage
+        ]}>
+        {showMenu && !isAuthPage && !isHomePage && (
+          <View style={[
+            styles.headerRow, 
+            { borderBottomColor: colors.border }, 
+            isMobile && styles.headerRowMobile,
+          ]}>
             <Pressable
               onPress={() => setCollapsed((s) => !s)}
               style={styles.menuButton}
@@ -851,6 +868,12 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 
+  contentHomepage: {
+    padding: 0,
+    margin: 0,
+    marginLeft: 0,
+  },
+
   headerRow: {
     height: 52,
     flexDirection: 'row',
@@ -865,6 +888,16 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    borderBottomWidth: 0,
+  },
+
+  headerRowHomepage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    backgroundColor: 'transparent',
     borderBottomWidth: 0,
   },
 
