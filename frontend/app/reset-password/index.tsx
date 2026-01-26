@@ -10,6 +10,9 @@ import {
   StatusBar,
   Alert,
   Image,
+  Keyboard,
+  TouchableWithoutFeedback,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -18,7 +21,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 export default function ResetPassword() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +37,10 @@ export default function ResetPassword() {
     hasNumber: false,
     hasSpecial: false,
   });
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   useEffect(() => {
     // Validate password as user types
@@ -62,6 +69,7 @@ export default function ResetPassword() {
       return;
     }
 
+    dismissKeyboard();
     setLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({
@@ -84,21 +92,21 @@ export default function ResetPassword() {
   if (resetSuccess) {
     return (
       <View style={[styles.container, { backgroundColor: colors.primary }]}>
-        <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+        <StatusBar barStyle="dark-content" />
         
         <View style={[styles.successContainer, { backgroundColor: colors.primary }]}>
           <View style={[styles.iconCircle, { backgroundColor: colors.background }]}>
             <Ionicons name="checkmark-circle" size={60} color="#4CAF50" />
           </View>
           
-          <Text style={[styles.successTitle, { color: colors.text }]}>Password Reset!</Text>
+          <Text style={[styles.successTitle, { color: '#1A1A1A' }]}>Password Reset!</Text>
           
-          <Text style={[styles.successText, { color: colors.text }]}>
+          <Text style={[styles.successText, { color: '#1A1A1A' }]}>
             Your password has been successfully reset. You can now log in with your new password.
           </Text>
 
           <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: colors.text }]}
+            style={[styles.loginButton, { backgroundColor: '#1A1A1A' }]}
             onPress={async () => {
               // Sign out to clear the recovery session
               await supabase.auth.signOut();
@@ -115,119 +123,127 @@ export default function ResetPassword() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.select({ ios: "padding", android: undefined })}
-      style={[styles.container, { backgroundColor: colors.primary }]}
-    >
-      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+    <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.select({ ios: "padding", android: "height" })}
+        style={[styles.container, { backgroundColor: colors.primary }]}
+      >
+        <StatusBar barStyle="dark-content" />
 
-      {/* Top section with mascot */}
-      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
-          <Image
-            source={require('../../assets/mascot.png')}
-            style={styles.mascotImage}
-          />
-        </View>
-      </View>
-
-      {/* Form section */}
-      <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Reset Password</Text>
-        
-        <Text style={[styles.subtitle, { color: colors.text }]}>
-          Create a new password for your account.
-        </Text>
-
-        {/* New Password */}
-        <Text style={[styles.label, { color: colors.text }]}>New Password</Text>
-        <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
-          <TextInput
-            style={[styles.passwordInput, { color: colors.text }]}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-            placeholderTextColor={colors.placeholder}
-            placeholder="Enter new password"
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeButton}
-          >
-            <Ionicons
-              name={showPassword ? "eye-off-outline" : "eye-outline"}
-              size={22}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Password Requirements */}
-        <View style={[styles.rulesBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[styles.rulesTitle, { color: colors.text }]}>Password must contain:</Text>
-          <Text style={[styles.rule, { color: validations.minLength ? '#4CAF50' : colors.textSecondary }]}>
-            {validations.minLength ? '✓' : '✗'} At least 8 characters
-          </Text>
-          <Text style={[styles.rule, { color: validations.hasUppercase ? '#4CAF50' : colors.textSecondary }]}>
-            {validations.hasUppercase ? '✓' : '✗'} One uppercase letter
-          </Text>
-          <Text style={[styles.rule, { color: validations.hasLowercase ? '#4CAF50' : colors.textSecondary }]}>
-            {validations.hasLowercase ? '✓' : '✗'} One lowercase letter
-          </Text>
-          <Text style={[styles.rule, { color: validations.hasNumber ? '#4CAF50' : colors.textSecondary }]}>
-            {validations.hasNumber ? '✓' : '✗'} One number
-          </Text>
-          <Text style={[styles.rule, { color: validations.hasSpecial ? '#4CAF50' : colors.textSecondary }]}>
-            {validations.hasSpecial ? '✓' : '✗'} One special character
-          </Text>
-        </View>
-
-        {/* Confirm Password */}
-        <Text style={[styles.label, { color: colors.text }]}>Confirm New Password</Text>
-        <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
-          <TextInput
-            style={[styles.passwordInput, { color: colors.text }]}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            autoCapitalize="none"
-            placeholderTextColor={colors.placeholder}
-            placeholder="Re-enter new password"
-          />
-          <TouchableOpacity
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            style={styles.eyeButton}
-          >
-            <Ionicons
-              name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
-              size={22}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Password match indicator */}
-        {confirmPassword.length > 0 && (
-          <Text style={[
-            styles.matchText,
-            { color: password === confirmPassword ? '#4CAF50' : '#FF5500' }
-          ]}>
-            {password === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
-          </Text>
-        )}
-
-        <TouchableOpacity
-          style={[styles.resetButton, { backgroundColor: colors.text }]}
-          onPress={handleResetPassword}
-          disabled={loading}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
-          <Text style={[styles.resetButtonText, { color: colors.primary }]}>
-            {loading ? 'Resetting...' : 'Reset Password'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          {/* Top section with mascot */}
+          <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
+            <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
+              <Image
+                source={require('../../assets/mascot_welcome.png')}
+                style={styles.mascotImage}
+              />
+            </View>
+          </View>
+
+          {/* Form section */}
+          <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.title, { color: '#1A1A1A' }]}>Reset Password</Text>
+            
+            <Text style={[styles.subtitle, { color: '#1A1A1A' }]}>
+              Create a new password for your account.
+            </Text>
+
+            {/* New Password */}
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>New Password</Text>
+            <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                placeholderTextColor={colors.placeholder}
+                placeholder="Enter new password"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Password Requirements */}
+            <View style={[styles.rulesBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Text style={[styles.rulesTitle, { color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}>Password must contain:</Text>
+              <Text style={[styles.rule, { color: validations.minLength ? '#4CAF50' : colors.textSecondary }]}>
+                {validations.minLength ? '✓' : '✗'} At least 8 characters
+              </Text>
+              <Text style={[styles.rule, { color: validations.hasUppercase ? '#4CAF50' : colors.textSecondary }]}>
+                {validations.hasUppercase ? '✓' : '✗'} One uppercase letter
+              </Text>
+              <Text style={[styles.rule, { color: validations.hasLowercase ? '#4CAF50' : colors.textSecondary }]}>
+                {validations.hasLowercase ? '✓' : '✗'} One lowercase letter
+              </Text>
+              <Text style={[styles.rule, { color: validations.hasNumber ? '#4CAF50' : colors.textSecondary }]}>
+                {validations.hasNumber ? '✓' : '✗'} One number
+              </Text>
+              <Text style={[styles.rule, { color: validations.hasSpecial ? '#4CAF50' : colors.textSecondary }]}>
+                {validations.hasSpecial ? '✓' : '✗'} One special character
+              </Text>
+            </View>
+
+            {/* Confirm Password */}
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>Confirm New Password</Text>
+            <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                placeholderTextColor={colors.placeholder}
+                placeholder="Re-enter new password"
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeButton}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Password match indicator */}
+            {confirmPassword.length > 0 && (
+              <Text style={[
+                styles.matchText,
+                { color: password === confirmPassword ? '#4CAF50' : '#FF5500' }
+              ]}>
+                {password === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
+              </Text>
+            )}
+
+            <TouchableOpacity
+              style={[styles.resetButton, { backgroundColor: '#1A1A1A' }]}
+              onPress={handleResetPassword}
+              disabled={loading}
+            >
+              <Text style={[styles.resetButtonText, { color: colors.primary }]}>
+                {loading ? 'Resetting...' : 'Reset Password'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -235,29 +251,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   topSection: {
-    flex: 0.2,
-    justifyContent: "center",
+    height: 220,
+    justifyContent: "flex-end",
     alignItems: "center",
+    paddingBottom: 10,
   },
   brainContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     justifyContent: "center",
     alignItems: "center",
   },
   mascotImage: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     resizeMode: 'contain',
   },
   formSection: {
-    flex: 0.8,
+    flex: 1,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
     paddingTop: 25,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 26,

@@ -218,6 +218,9 @@ function LayoutContent() {
   
   // Check if current page is the homepage (for styling)
   const isHomePage = pathname === '/home';
+  
+  // Pages that need full-bleed styling (no padding/margins)
+  const isFullBleedPage = isHomePage || isAuthPage;
 
   function applySessionUser(session: any | null) {
     if (!session || !session.user) {
@@ -527,7 +530,7 @@ function LayoutContent() {
           styles.content, 
           { backgroundColor: colors.background }, 
           isMobile && styles.contentMobile,
-          isHomePage && styles.contentHomepage
+          isFullBleedPage && styles.contentFullBleed
         ]}>
         {showMenu && !isAuthPage && !isHomePage && (
           <View style={[
@@ -868,7 +871,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 
-  contentHomepage: {
+  contentFullBleed: {
     padding: 0,
     margin: 0,
     marginLeft: 0,

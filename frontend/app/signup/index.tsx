@@ -21,7 +21,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 export default function Signup() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -90,7 +90,7 @@ export default function Signup() {
         behavior={Platform.select({ ios: "padding", android: "height" })}
         style={[styles.container, { backgroundColor: colors.primary }]}
       >
-        <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+        <StatusBar barStyle="dark-content" />
 
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
@@ -101,7 +101,7 @@ export default function Signup() {
           <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
             <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
               <Image 
-                source={require('../../assets/mascot.png')} 
+                source={require('../../assets/mascot_welcome.png')} 
                 style={styles.mascotImage}
               />
             </View>
@@ -109,11 +109,11 @@ export default function Signup() {
 
           {/* Orange form section */}
           <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.welcomeTitle, { color: colors.text }]}>Create Account</Text>
+            <Text style={[styles.welcomeTitle, { color: '#1A1A1A' }]}>Create Account</Text>
 
-            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>Email</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
+              style={[styles.input, { backgroundColor: colors.background, color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -122,10 +122,10 @@ export default function Signup() {
               placeholder="email@example.com"
             />
 
-            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>Password</Text>
             <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
               <TextInput
-                style={[styles.passwordInput, { color: colors.text }]}
+                style={[styles.passwordInput, { color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -145,10 +145,10 @@ export default function Signup() {
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>Confirm Password</Text>
             <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
               <TextInput
-                style={[styles.passwordInput, { color: colors.text }]}
+                style={[styles.passwordInput, { color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
@@ -169,7 +169,7 @@ export default function Signup() {
             </View>
 
             <TouchableOpacity 
-              style={[styles.signupButton, { backgroundColor: colors.text }]}
+              style={[styles.signupButton, { backgroundColor: '#1A1A1A' }]}
               onPress={handleSignup}
               disabled={loading}
             >
@@ -179,9 +179,9 @@ export default function Signup() {
             </TouchableOpacity>
 
             <View style={styles.loginContainer}>
-              <Text style={[styles.loginText, { color: colors.text }]}>Already have an account? </Text>
+              <Text style={[styles.loginText, { color: '#1A1A1A' }]}>Already have an account? </Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={[styles.loginLink, { color: colors.text }]}>Login here!</Text>
+                <Text style={[styles.loginLink, { color: '#1A1A1A' }]}>Login here!</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -199,9 +199,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   topSection: {
-    height: 180,
-    justifyContent: "center",
+    height: 260,
+    justifyContent: "flex-end",
     alignItems: "center",
+    paddingBottom: 20,
   },
   brainContainer: {
     width: 140,
@@ -211,8 +212,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mascotImage: {
-    width: 120,
-    height: 120,
+    width: 140,
+    height: 140,
     resizeMode: 'contain',
   },
   formSection: {

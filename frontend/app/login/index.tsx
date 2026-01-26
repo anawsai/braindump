@@ -21,7 +21,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 export default function Login() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -57,7 +57,7 @@ export default function Login() {
         behavior={Platform.select({ ios: "padding", android: "height" })}
         style={[styles.container, { backgroundColor: colors.primary }]}
       >
-        <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+        <StatusBar barStyle="dark-content" />
 
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
@@ -68,7 +68,7 @@ export default function Login() {
           <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
             <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
               <Image
-                source={require('../../assets/mascot.png')}
+                source={require('../../assets/mascot_welcome.png')}
                 style={styles.mascotImage}
               />
             </View>
@@ -76,11 +76,11 @@ export default function Login() {
 
           {/* Orange form section */}
           <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.welcomeTitle, { color: colors.text }]}>Welcome Back!</Text>
+            <Text style={[styles.welcomeTitle, { color: '#1A1A1A' }]}>Welcome Back!</Text>
 
-            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>Email</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
+              style={[styles.input, { backgroundColor: colors.background, color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -88,10 +88,10 @@ export default function Login() {
               placeholderTextColor={colors.placeholder}
             />
 
-            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>Password</Text>
             <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
               <TextInput
-                style={[styles.passwordInput, { color: colors.text }]}
+                style={[styles.passwordInput, { color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -115,19 +115,19 @@ export default function Login() {
                 style={styles.checkboxContainer}
                 onPress={() => setRememberMe(!rememberMe)}
               >
-                <View style={[styles.checkbox, { borderColor: colors.text, backgroundColor: colors.background }, rememberMe && { backgroundColor: colors.text }]}>
-                  {rememberMe && <Text style={[styles.checkmark, { color: colors.background }]}>✓</Text>}
+                <View style={[styles.checkbox, { borderColor: '#1A1A1A', backgroundColor: '#FFFFFF' }, rememberMe && { backgroundColor: '#1A1A1A' }]}>
+                  {rememberMe && <Text style={[styles.checkmark, { color: '#FFFFFF' }]}>✓</Text>}
                 </View>
-                <Text style={[styles.rememberText, { color: colors.text }]}>Remember me</Text>
+                <Text style={[styles.rememberText, { color: '#1A1A1A' }]}>Remember me</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => router.push('/forgot-password')}>
-                <Text style={[styles.forgotText, { color: colors.text }]}>Forgot password?</Text>
+                <Text style={[styles.forgotText, { color: '#1A1A1A' }]}>Forgot password?</Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity
-              style={[styles.loginButton, { backgroundColor: colors.text }]}
+              style={[styles.loginButton, { backgroundColor: '#1A1A1A' }]}
               onPress={handleLogin}
               disabled={loading}
             >
@@ -137,9 +137,9 @@ export default function Login() {
             </TouchableOpacity>
 
             <View style={styles.signupContainer}>
-              <Text style={[styles.signupText, { color: colors.text }]}>Don't have an account? </Text>
+              <Text style={[styles.signupText, { color: '#1A1A1A' }]}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => router.push('/signup')}>
-                <Text style={[styles.signupLink, { color: colors.text }]}>Sign up here!</Text>
+                <Text style={[styles.signupLink, { color: '#1A1A1A' }]}>Sign up here!</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -157,9 +157,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   topSection: {
-    height: 200,
-    justifyContent: "center",
+    height: 280,
+    justifyContent: "flex-end",
     alignItems: "center",
+    paddingBottom: 20,
   },
   brainContainer: {
     width: 140,
@@ -169,8 +170,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mascotImage: {
-    width: 120,
-    height: 120,
+    width: 140,
+    height: 140,
     resizeMode: 'contain',
   },
   formSection: {

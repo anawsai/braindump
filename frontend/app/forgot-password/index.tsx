@@ -11,6 +11,9 @@ import {
   StatusBar,
   Alert,
   Image,
+  Keyboard,
+  TouchableWithoutFeedback,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -20,65 +23,70 @@ import { useTheme } from "../../context/ThemeContext";
 
 export default function ForgotPassword() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   async function handleResetPassword() {
-  if (!email) {
-    Alert.alert('Error', 'Please enter your email address');
-    return;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    Alert.alert('Error', 'Please enter a valid email address');
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://anawsai.github.io/braindump-redirect/',
-    });
-
-    if (error) {
-      Alert.alert('Error', error.message);
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email address');
       return;
     }
 
-    setEmailSent(true);
-  } catch (err: any) {
-    Alert.alert('Error', err?.message ?? 'Something went wrong');
-  } finally {
-    setLoading(false);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    dismissKeyboard();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: 'https://anawsai.github.io/braindump-redirect/',
+      });
+
+      if (error) {
+        Alert.alert('Error', error.message);
+        return;
+      }
+
+      setEmailSent(true);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   if (emailSent) {
     return (
       <View style={[styles.container, { backgroundColor: colors.primary }]}>
-        <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+        <StatusBar barStyle="dark-content" />
         
         <View style={[styles.successContainer, { backgroundColor: colors.primary }]}>
           <View style={[styles.iconCircle, { backgroundColor: colors.background }]}>
             <Ionicons name="mail" size={60} color={colors.primary} />
           </View>
           
-          <Text style={[styles.successTitle, { color: colors.text }]}>Check Your Email</Text>
+          <Text style={[styles.successTitle, { color: '#1A1A1A' }]}>Check Your Email</Text>
           
-          <Text style={[styles.successText, { color: colors.text }]}>
+          <Text style={[styles.successText, { color: '#1A1A1A' }]}>
             We've sent a password reset link to:
           </Text>
-          <Text style={[styles.emailText, { color: colors.text }]}>{email}</Text>
+          <Text style={[styles.emailText, { color: '#1A1A1A' }]}>{email}</Text>
           
-          <Text style={[styles.instructionText, { color: colors.text }]}>
+          <Text style={[styles.instructionText, { color: '#1A1A1A' }]}>
             Click the link in the email to reset your password. After resetting, come back here to log in with your new password.
           </Text>
 
           <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: colors.text }]}
+            style={[styles.backButton, { backgroundColor: '#1A1A1A' }]}
             onPress={() => router.replace('/login')}
           >
             <Text style={[styles.backButtonText, { color: colors.primary }]}>
@@ -93,7 +101,7 @@ export default function ForgotPassword() {
               handleResetPassword();
             }}
           >
-            <Text style={[styles.resendText, { color: colors.text }]}>
+            <Text style={[styles.resendText, { color: '#1A1A1A' }]}>
               Didn't receive the email? Resend
             </Text>
           </TouchableOpacity>
@@ -103,67 +111,75 @@ export default function ForgotPassword() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.select({ ios: "padding", android: undefined })}
-      style={[styles.container, { backgroundColor: colors.primary }]}
-    >
-      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+    <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.select({ ios: "padding", android: "height" })}
+        style={[styles.container, { backgroundColor: colors.primary }]}
+      >
+        <StatusBar barStyle="dark-content" />
 
-      {/* Top section with mascot */}
-      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
-          <Image
-            source={require('../../assets/mascot.png')}
-            style={styles.mascotImage}
-          />
-        </View>
-      </View>
-
-      {/* Form section */}
-      <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
-        {/* Back button */}
-        <TouchableOpacity 
-          style={styles.backArrow} 
-          onPress={() => router.back()}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+          {/* Top section with mascot */}
+          <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
+            <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
+              <Image
+                source={require('../../assets/mascot_welcome.png')}
+                style={styles.mascotImage}
+              />
+            </View>
+          </View>
 
-        <Text style={[styles.title, { color: colors.text }]}>Forgot Password?</Text>
-        
-        <Text style={[styles.subtitle, { color: colors.text }]}>
-          No worries! Enter your email address and we'll send you a link to reset your password.
-        </Text>
+          {/* Form section */}
+          <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
+            {/* Back button */}
+            <TouchableOpacity 
+              style={styles.backArrow} 
+              onPress={() => router.back()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            </TouchableOpacity>
 
-        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholderTextColor={colors.placeholder}
-          placeholder="Enter your email"
-        />
+            <Text style={[styles.title, { color: '#1A1A1A' }]}>Forgot Password?</Text>
+            
+            <Text style={[styles.subtitle, { color: '#1A1A1A' }]}>
+              No worries! Enter your email address and we'll send you a link to reset your password.
+            </Text>
 
-        <TouchableOpacity
-          style={[styles.resetButton, { backgroundColor: colors.text }]}
-          onPress={handleResetPassword}
-          disabled={loading}
-        >
-          <Text style={[styles.resetButtonText, { color: colors.primary }]}>
-            {loading ? 'Sending...' : 'Send Reset Link'}
-          </Text>
-        </TouchableOpacity>
+            <Text style={[styles.label, { color: '#1A1A1A' }]}>Email</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholderTextColor={colors.placeholder}
+              placeholder="Enter your email"
+            />
 
-        <View style={styles.loginContainer}>
-          <Text style={[styles.loginText, { color: colors.text }]}>Remember your password? </Text>
-          <TouchableOpacity onPress={() => router.push('/login')}>
-            <Text style={[styles.loginLink, { color: colors.text }]}>Login here!</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+            <TouchableOpacity
+              style={[styles.resetButton, { backgroundColor: '#1A1A1A' }]}
+              onPress={handleResetPassword}
+              disabled={loading}
+            >
+              <Text style={[styles.resetButtonText, { color: colors.primary }]}>
+                {loading ? 'Sending...' : 'Send Reset Link'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.loginContainer}>
+              <Text style={[styles.loginText, { color: '#1A1A1A' }]}>Remember your password? </Text>
+              <TouchableOpacity onPress={() => router.push('/login')}>
+                <Text style={[styles.loginLink, { color: '#1A1A1A' }]}>Login here!</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -171,29 +187,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   topSection: {
-    flex: 0.3,
-    justifyContent: "center",
+    height: 280,
+    justifyContent: "flex-end",
     alignItems: "center",
+    paddingBottom: 20,
   },
   brainContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     justifyContent: "center",
     alignItems: "center",
   },
   mascotImage: {
-    width: 120,
-    height: 120,
+    width: 140,
+    height: 140,
     resizeMode: 'contain',
   },
   formSection: {
-    flex: 0.7,
+    flex: 1,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
     paddingTop: 20,
+    paddingBottom: 40,
   },
   backArrow: {
     marginBottom: 15,
