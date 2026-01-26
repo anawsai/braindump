@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,8 +16,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../context/ThemeContext";
+
+const REMEMBER_ME_KEY = "@remember_me";
+const REMEMBERED_EMAIL_KEY = "@remembered_email";
+const REMEMBERED_PASSWORD_KEY = "@remembered_password";
 
 export default function Login() {
   const router = useRouter();
@@ -27,6 +32,59 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isLoadingCredentials, setIsLoadingCredentials] = useState(true);
+
+  // Load remembered credentials on mount
+  useEffect(() => {
+    loadRememberedCredentials();
+  }, []);
+
+  async function loadRememberedCredentials() {
+    try {
+      setIsLoadingCredentials(true);
+      const [remembered, savedEmail, savedPassword] = await Promise.all([
+        AsyncStorage.getItem(REMEMBER_ME_KEY),
+        AsyncStorage.getItem(REMEMBERED_EMAIL_KEY),
+        AsyncStorage.getItem(REMEMBERED_PASSWORD_KEY),
+      ]);
+      
+      if (remembered === "true" && savedEmail && savedPassword) {
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      }
+    } catch (error) {
+      console.error("Error loading remembered credentials:", error);
+    } finally {
+      setIsLoadingCredentials(false);
+    }
+  }
+
+  async function saveCredentials() {
+    try {
+      if (rememberMe) {
+        await AsyncStorage.setItem(REMEMBER_ME_KEY, "true");
+        await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+        await AsyncStorage.setItem(REMEMBERED_PASSWORD_KEY, password);
+      } else {
+        await clearCredentials();
+      }
+    } catch (error) {
+      console.error("Error saving credentials:", error);
+    }
+  }
+
+  async function clearCredentials() {
+    try {
+      await AsyncStorage.multiRemove([
+        REMEMBER_ME_KEY,
+        REMEMBERED_EMAIL_KEY,
+        REMEMBERED_PASSWORD_KEY,
+      ]);
+    } catch (error) {
+      console.error("Error clearing credentials:", error);
+    }
+  }
 
   const dismissKeyboard = () => {
     Keyboard.dismiss();
@@ -40,15 +98,37 @@ export default function Login() {
 
     dismissKeyboard();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
 
-    if (error) {
-      Alert.alert('Login Failed', error.message);
+      if (error) {
+        Alert.alert('Login Failed', error.message);
+        setLoading(false);
+        return;
+      }
+      
+      // Only save credentials after successful login
+      await saveCredentials();
+      
+      // If login successful, the auth state change handler in _layout.tsx will redirect
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Something went wrong');
+      setLoading(false);
     }
-    setLoading(false);
+  }
+
+  async function handleRememberMeToggle() {
+    const newValue = !rememberMe;
+    setRememberMe(newValue);
+    
+    // If turning off, clear saved credentials immediately
+    if (!newValue) {
+      await clearCredentials();
+    }
   }
 
   return (
@@ -86,6 +166,8 @@ export default function Login() {
               autoCapitalize="none"
               keyboardType="email-address"
               placeholderTextColor={colors.placeholder}
+              placeholder="Enter your email"
+              editable={!isLoadingCredentials}
             />
 
             <Text style={[styles.label, { color: '#1A1A1A' }]}>Password</Text>
@@ -97,6 +179,8 @@ export default function Login() {
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 placeholderTextColor={colors.placeholder}
+                placeholder="Enter your password"
+                editable={!isLoadingCredentials}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -113,10 +197,15 @@ export default function Login() {
             <View style={styles.optionsRow}>
               <TouchableOpacity
                 style={styles.checkboxContainer}
-                onPress={() => setRememberMe(!rememberMe)}
+                onPress={handleRememberMeToggle}
+                activeOpacity={0.7}
               >
-                <View style={[styles.checkbox, { borderColor: '#1A1A1A', backgroundColor: '#FFFFFF' }, rememberMe && { backgroundColor: '#1A1A1A' }]}>
-                  {rememberMe && <Text style={[styles.checkmark, { color: '#FFFFFF' }]}>✓</Text>}
+                <View style={[
+                  styles.checkbox, 
+                  { borderColor: '#1A1A1A', backgroundColor: '#FFFFFF' }, 
+                  rememberMe && { backgroundColor: '#1A1A1A' }
+                ]}>
+                  {rememberMe && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
                 </View>
                 <Text style={[styles.rememberText, { color: '#1A1A1A' }]}>Remember me</Text>
               </TouchableOpacity>
@@ -129,7 +218,7 @@ export default function Login() {
             <TouchableOpacity
               style={[styles.loginButton, { backgroundColor: '#1A1A1A' }]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loading || isLoadingCredentials}
             >
               <Text style={[styles.loginButtonText, { color: colors.primary }]}>
                 {loading ? 'Logging in...' : 'LOGIN'}
@@ -224,17 +313,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkbox: {
-    width: 18,
-    height: 18,
+    width: 22,
+    height: 22,
     borderWidth: 2,
-    borderRadius: 3,
-    marginRight: 8,
+    borderRadius: 4,
+    marginRight: 10,
     justifyContent: "center",
     alignItems: "center",
-  },
-  checkmark: {
-    fontSize: 12,
-    fontWeight: "bold",
   },
   rememberText: {
     fontSize: 14,

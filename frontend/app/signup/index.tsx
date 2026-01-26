@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -29,9 +29,33 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Password validation states
+  const [validations, setValidations] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecial: false,
+  });
+
   const dismissKeyboard = () => {
     Keyboard.dismiss();
   };
+
+  // Validate password as user types
+  useEffect(() => {
+    setValidations({
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    });
+  }, [password]);
+
+  // Check if all validations pass
+  const isPasswordValid = Object.values(validations).every(v => v);
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
   async function handleSignup() {
     if (!email || !password || !confirmPassword) {
@@ -39,13 +63,19 @@ export default function Signup() {
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+    if (!isPasswordValid) {
+      Alert.alert('Error', 'Please make sure your password meets all requirements');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
     
@@ -64,14 +94,9 @@ export default function Signup() {
   
       if (data.user && !data.session) {
         Alert.alert(
-          'Check Your Email! ',
+          'Check Your Email!',
           'We sent you a confirmation link. Please check your inbox and click the link to activate your account.',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/login')
-            }
-          ]
+          [{ text: 'OK', onPress: () => router.replace('/login') }]
         );
       } else if (data.session) {
         Alert.alert('Success', 'Account created successfully!');
@@ -83,6 +108,17 @@ export default function Signup() {
       setLoading(false);
     }
   }
+
+  const ValidationItem = ({ valid, label }: { valid: boolean; label: string }) => (
+    <View style={styles.ruleItem}>
+      <Ionicons 
+        name={valid ? "checkmark-circle" : "close-circle"} 
+        size={16} 
+        color={valid ? '#4CAF50' : '#999'} 
+      />
+      <Text style={[styles.ruleText, { color: valid ? '#4CAF50' : '#666' }]}>{label}</Text>
+    </View>
+  );
 
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
@@ -99,18 +135,17 @@ export default function Signup() {
         >
           {/* Top section with mascot */}
           <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-            <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
-              <Image 
-                source={require('../../assets/mascot_welcome.png')} 
-                style={styles.mascotImage}
-              />
-            </View>
+            <Image 
+              source={require('../../assets/mascot_welcome.png')} 
+              style={styles.mascotImage}
+            />
           </View>
 
-          {/* Orange form section */}
+          {/* Form section */}
           <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
             <Text style={[styles.welcomeTitle, { color: '#1A1A1A' }]}>Create Account</Text>
 
+            {/* Email */}
             <Text style={[styles.label, { color: '#1A1A1A' }]}>Email</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, color: mode === 'dark' ? '#FFFFFF' : '#000000' }]}
@@ -122,6 +157,7 @@ export default function Signup() {
               placeholder="email@example.com"
             />
 
+            {/* Password */}
             <Text style={[styles.label, { color: '#1A1A1A' }]}>Password</Text>
             <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
               <TextInput
@@ -131,20 +167,32 @@ export default function Signup() {
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 placeholderTextColor={colors.placeholder}
-                placeholder="At least 6 characters"
+                placeholder="Create a strong password"
               />
-              <TouchableOpacity 
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeButton}
-              >
-                <Ionicons 
-                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={22} 
-                  color={colors.textSecondary}
-                />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
+            {/* Password Rules - 2 columns */}
+            <View style={[styles.rulesBox, { backgroundColor: colors.background }]}>
+              <View style={styles.rulesColumns}>
+                <View style={styles.rulesColumn}>
+                  <ValidationItem valid={validations.minLength} label="8+ characters" />
+                  <ValidationItem valid={validations.hasUppercase} label="Uppercase" />
+                  <ValidationItem valid={validations.hasLowercase} label="Lowercase" />
+                </View>
+                <View style={styles.rulesColumn}>
+                  <ValidationItem valid={validations.hasNumber} label="Number" />
+                  <ValidationItem valid={validations.hasSpecial} label="Special (!@#$)" />
+                  {confirmPassword.length > 0 && (
+                    <ValidationItem valid={passwordsMatch} label="Passwords match" />
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Confirm Password */}
             <Text style={[styles.label, { color: '#1A1A1A' }]}>Confirm Password</Text>
             <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
               <TextInput
@@ -156,28 +204,27 @@ export default function Signup() {
                 placeholderTextColor={colors.placeholder}
                 placeholder="Re-enter password"
               />
-              <TouchableOpacity 
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeButton}
-              >
-                <Ionicons 
-                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={22} 
-                  color={colors.textSecondary}
-                />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+                <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
+            {/* Sign Up Button */}
             <TouchableOpacity 
-              style={[styles.signupButton, { backgroundColor: '#1A1A1A' }]}
+              style={[
+                styles.signupButton, 
+                { backgroundColor: '#1A1A1A' },
+                (!isPasswordValid || !passwordsMatch || !email) && styles.signupButtonDisabled
+              ]}
               onPress={handleSignup}
-              disabled={loading}
+              disabled={loading || !isPasswordValid || !passwordsMatch || !email}
             >
               <Text style={[styles.signupButtonText, { color: colors.primary }]}>
                 {loading ? 'Creating Account...' : 'SIGN UP'}
               </Text>
             </TouchableOpacity>
 
+            {/* Login Link */}
             <View style={styles.loginContainer}>
               <Text style={[styles.loginText, { color: '#1A1A1A' }]}>Already have an account? </Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
@@ -199,17 +246,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   topSection: {
-    height: 260,
+    height: 240,
     justifyContent: "flex-end",
     alignItems: "center",
-    paddingBottom: 20,
-  },
-  brainContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingBottom: 15,
   },
   mascotImage: {
     width: 140,
@@ -218,49 +258,70 @@ const styles = StyleSheet.create({
   },
   formSection: {
     flex: 1,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
     paddingHorizontal: 30,
-    paddingTop: 35,
-    paddingBottom: 40,
+    paddingTop: 20,
+    paddingBottom: 30,
   },
   welcomeTitle: {
     fontSize: 26,
     fontWeight: "bold",
-    marginBottom: 25,
+    marginBottom: 18,
   },
   label: {
     fontSize: 15,
     fontWeight: "600",
-    marginBottom: 8,
-    marginTop: 5,
+    marginBottom: 6,
   },
   input: {
     borderRadius: 8,
-    padding: 13,
+    padding: 12,
     fontSize: 15,
-    marginBottom: 18,
+    marginBottom: 14,
   },
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 8,
-    marginBottom: 15,
+    marginBottom: 10,
   },
   passwordInput: {
     flex: 1,
-    padding: 13,
+    padding: 12,
     fontSize: 15,
   },
   eyeButton: {
-    padding: 13,
+    padding: 12,
+  },
+  rulesBox: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 14,
+  },
+  rulesColumns: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rulesColumn: {
+    flex: 1,
+    gap: 6,
+  },
+  ruleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ruleText: {
+    fontSize: 12,
   },
   signupButton: {
     borderRadius: 8,
-    paddingVertical: 15,
+    paddingVertical: 14,
     alignItems: "center",
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 5,
+    marginBottom: 18,
+  },
+  signupButtonDisabled: {
+    opacity: 0.6,
   },
   signupButtonText: {
     fontSize: 16,

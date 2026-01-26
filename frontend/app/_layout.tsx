@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 import { Slot, useRouter, usePathname } from 'expo-router';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { LoadingProvider, useLoading } from '../context/LoadingContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
@@ -212,6 +212,9 @@ function LayoutContent() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(true);
   const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
+  
+  // Track if we're in password recovery mode to prevent redirect to home
+  const isInRecoveryMode = useRef(false);
 
   // Check if current page is an auth page (no nav shown)
   const isAuthPage = AUTH_PAGES.some(page => pathname === page || pathname.startsWith(page));
@@ -336,6 +339,9 @@ function LayoutContent() {
         
         // Check if this is a password reset link
         if (url.includes('reset-password') || url.includes('type=recovery')) {
+          // Set recovery mode flag BEFORE processing tokens
+          isInRecoveryMode.current = true;
+          
           // Parse tokens from hash fragment manually
           const hashIndex = url.indexOf('#');
           if (hashIndex !== -1) {
@@ -364,20 +370,22 @@ function LayoutContent() {
                 if (error) {
                   console.error('Error setting session:', error.message);
                   Alert.alert('Error', error.message);
+                  isInRecoveryMode.current = false;
                   return;
                 }
                 
-                console.log('Session set successfully!');
+                console.log('Session set successfully! Navigating to reset-password...');
                 setShowMenu(false);
                 router.replace('/reset-password');
                 return;
               } catch (err) {
                 console.error('Error processing reset link:', err);
+                isInRecoveryMode.current = false;
               }
             }
           }
           
-          // No tokens found
+          // No tokens found but still a reset link - navigate anyway
           setShowMenu(false);
           router.replace('/reset-password');
         }
@@ -395,6 +403,12 @@ function LayoutContent() {
     }
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // Don't redirect if we're in recovery mode
+      if (isInRecoveryMode.current) {
+        console.log('In recovery mode, skipping initial session redirect');
+        return;
+      }
+      
       if (session) {
         setShowMenu(true);
         setCollapsed(true); // Ensure sidebar is closed on initial load
@@ -414,10 +428,12 @@ function LayoutContent() {
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth event:', event);
+        console.log('Auth event:', event, 'Recovery mode:', isInRecoveryMode.current);
         
         // Handle PASSWORD_RECOVERY event (works on web)
         if (event === 'PASSWORD_RECOVERY') {
+          console.log('PASSWORD_RECOVERY event received');
+          isInRecoveryMode.current = true;
           setShowMenu(false);
           router.replace('/reset-password');
           return;
@@ -428,11 +444,23 @@ function LayoutContent() {
           if (session) {
             applySessionUser(session);
           }
+          // If we just updated the password, clear recovery mode
+          // The reset-password page will handle navigation to login
           return;
         }
         
-        // Only redirect on SIGNED_IN or SIGNED_OUT
+        // Handle SIGNED_IN - but check if we're in recovery mode
         if (event === 'SIGNED_IN' && session) {
+          // If we're in recovery mode, redirect to reset-password instead of home
+          if (isInRecoveryMode.current) {
+            console.log('SIGNED_IN during recovery mode - redirecting to reset-password');
+            setShowMenu(false);
+            applySessionUser(session);
+            router.replace('/reset-password');
+            return;
+          }
+          
+          // Normal sign in flow
           setShowMenu(true);
           setCollapsed(true); // Ensure sidebar is closed on login
           applySessionUser(session);
@@ -442,6 +470,8 @@ function LayoutContent() {
             await loadUserStats(session.user.id);
           }
         } else if (event === 'SIGNED_OUT' || !session) {
+          // Clear recovery mode on sign out
+          isInRecoveryMode.current = false;
           setShowMenu(false);
           applySessionUser(null);
           router.replace('/login');
@@ -460,6 +490,8 @@ function LayoutContent() {
   }, [router]);
 
   async function handleSignOut() {
+    // Clear recovery mode on sign out
+    isInRecoveryMode.current = false;
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     router.replace('/login');
