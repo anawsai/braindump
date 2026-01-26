@@ -18,6 +18,7 @@ function Sidebar({
   profileName,
   profileEmail,
   profileInitials,
+  avatarUrl,
 }: {
   collapsed: boolean;
   onNavigate: (path: string) => void;
@@ -27,6 +28,7 @@ function Sidebar({
   profileName: string;
   profileEmail: string;
   profileInitials: string;
+  avatarUrl: string | null;
 }) {
   const { colors } = useTheme();
   
@@ -49,7 +51,11 @@ function Sidebar({
       >
         <View style={styles.profileRow}>
           <View style={[styles.profileCircle, { backgroundColor: colors.primaryDark }]}>
-            <Text style={styles.profileInitials}>{profileInitials}</Text>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.profileImage} />
+            ) : (
+              <Text style={styles.profileInitials}>{profileInitials}</Text>
+            )}
           </View>
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, { color: colors.text }]}>{profileName}</Text>
@@ -143,6 +149,7 @@ function LayoutContent() {
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profileInitials, setProfileInitials] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(true);
   const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
@@ -152,6 +159,7 @@ function LayoutContent() {
       setProfileName('');
       setProfileEmail('');
       setProfileInitials('');
+      setAvatarUrl(null);
       setUserId(null);
       return;
     }
@@ -177,6 +185,7 @@ function LayoutContent() {
     setProfileName(fullName);
     setProfileEmail(email);
     setProfileInitials(initials);
+    setAvatarUrl(user.user_metadata?.avatar_url || null);
   }
 
   const refreshStats = useCallback(async () => {
@@ -340,6 +349,7 @@ function LayoutContent() {
           profileName={profileName}
           profileEmail={profileEmail}
           profileInitials={profileInitials}
+          avatarUrl={avatarUrl}
         />
       )}
       <View style={[styles.content, { backgroundColor: colors.background }]}>
@@ -431,6 +441,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     bottom: -10,
     left: -10,
+    overflow: 'hidden',
+  },
+
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 
   profileInitials: {

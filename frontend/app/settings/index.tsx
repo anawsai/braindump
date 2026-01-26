@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -45,10 +46,11 @@ export default function SettingsScreen() {
   const [stressAlerts, setStressAlerts] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // === Profile state (same idea as sidebar) ===
+  // === Profile state ===
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileInitials, setProfileInitials] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Helper: extract name/email/initials from Supabase user
   function applySessionUser(session: any | null) {
@@ -56,6 +58,7 @@ export default function SettingsScreen() {
       setProfileName("");
       setProfileEmail("");
       setProfileInitials("");
+      setAvatarUrl(null);
       return;
     }
 
@@ -80,6 +83,7 @@ export default function SettingsScreen() {
     setProfileName(fullName);
     setProfileEmail(email);
     setProfileInitials(initials);
+    setAvatarUrl(user.user_metadata?.avatar_url || null);
   }
 
   // Load all settings on mount
@@ -283,9 +287,13 @@ export default function SettingsScreen() {
         activeOpacity={0.7}
       >
         <View style={[styles.avatar, { backgroundColor: colors.primaryDark }]}>
-          <Text style={styles.avatarText}>
-            {profileInitials || "JJ"}
-          </Text>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>
+              {profileInitials || "JJ"}
+            </Text>
+          )}
         </View>
         <View>
           <Text style={[styles.accountName, { color: colors.text }]}>
@@ -437,6 +445,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   avatarText: {
     color: "#ffffff",

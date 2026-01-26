@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -33,6 +33,7 @@ export default function Profile() {
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileInitials, setProfileInitials] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [noteCount, setNoteCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -50,6 +51,7 @@ export default function Profile() {
       setProfileName("");
       setProfileEmail("");
       setProfileInitials("");
+      setAvatarUrl(null);
       setUserId(null);
       return;
     }
@@ -76,6 +78,7 @@ export default function Profile() {
     setProfileName(fullName);
     setProfileEmail(email);
     setProfileInitials(initials);
+    setAvatarUrl(user.user_metadata?.avatar_url || null);
   }
 
   async function loadUserData(uid: string) {
@@ -135,7 +138,11 @@ export default function Profile() {
       {/* Profile Circle */}
       <View style={styles.centerSection}>
         <View style={[styles.profileCircle, { backgroundColor: colors.primaryDark }]}>
-          <Text style={styles.profileInitials}>{profileInitials}</Text>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.profileImage} />
+          ) : (
+            <Text style={styles.profileInitials}>{profileInitials}</Text>
+          )}
         </View>
         <Text style={[styles.profileName, { color: colors.text }]}>{profileName}</Text>
         <Text style={[styles.profileUsername, { color: colors.textSecondary }]}>{profileEmail}</Text>
@@ -274,6 +281,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+  profileImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   profileInitials: {
     fontSize: 40,
