@@ -1,6 +1,29 @@
-const API = "http://localhost:5001";
-
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { supabase } from "./supabase";
+
+// API URL Configuration
+// Option 1: Set EXPO_PUBLIC_API_URL in your .env file
+// Option 2: Deploy backend and put the URL here
+// Option 3: For local dev, use your computer's IP (only works on same WiFi)
+
+const getApiUrl = () => {
+  // First, check for environment variable (works for all team members)
+  const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl) {
+    return envUrl;
+  }
+  
+  if (__DEV__) {
+    // Use local IP for mobile testing (must be on same WiFi)
+    return 'http://10.20.0.15:5001';
+  }
+  
+  // Production URL - replace with your deployed backend
+  return 'https://your-production-api.com';
+};
+
+const API = getApiUrl();
 
 export async function fetchNotes() {
   // Get current user
@@ -10,9 +33,25 @@ export async function fetchNotes() {
     throw new Error("Not authenticated");
   }
   
-  const res = await fetch(`${API}/notes?user_id=${user.id}`);
-  if (!res.ok) throw new Error("Failed to fetch notes");
-  return res.json();
+  // Add timeout so fetch doesn't hang forever
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+  
+  try {
+    const res = await fetch(`${API}/notes?user_id=${user.id}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error("Failed to fetch notes");
+    return res.json();
+  } catch (error: any) {
+    clearTimeout(timeout);
+    if (error.name === 'AbortError') {
+      console.error('Fetch notes timed out - is your backend running?');
+      return []; // Return empty array instead of hanging
+    }
+    throw error;
+  }
 }
 
 export async function addNote(
@@ -105,15 +144,31 @@ export async function getWeeklyNotes() {
     throw new Error("Not authenticated");
   }
   
-  const res = await fetch(`${API}/notes?user_id=${user.id}`);
-  if (!res.ok) throw new Error("Failed to fetch notes");
-  const allNotes = await res.json();
+  // Add timeout so fetch doesn't hang forever
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
   
-  // Filter to only notes from last week
-  return allNotes.filter((note: any) => {
-    const noteDate = new Date(note.created_at);
-    return noteDate >= oneWeekAgo;
-  });
+  try {
+    const res = await fetch(`${API}/notes?user_id=${user.id}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error("Failed to fetch notes");
+    const allNotes = await res.json();
+    
+    // Filter to only notes from last week
+    return allNotes.filter((note: any) => {
+      const noteDate = new Date(note.created_at);
+      return noteDate >= oneWeekAgo;
+    });
+  } catch (error: any) {
+    clearTimeout(timeout);
+    if (error.name === 'AbortError') {
+      console.error('Fetch weekly notes timed out - is your backend running?');
+      return []; // Return empty array instead of hanging
+    }
+    throw error;
+  }
 }
 
 // Extract themes and keywords from note content

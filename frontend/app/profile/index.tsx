@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../../lib/supabase";
 import React from "react";
 import { fetchNotes, getUserStats, getUserActivity, getUserAchievements } from "../../lib/api";
@@ -46,8 +47,8 @@ export default function Profile() {
   const [weeklyActivity, setWeeklyActivity] = useState<DailyActivity[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
 
-  function applySessionUser(session: any | null) {
-    if (!session || !session.user) {
+  function applySessionUser(user: any | null) {
+    if (!user) {
       setProfileName("");
       setProfileEmail("");
       setProfileInitials("");
@@ -56,7 +57,6 @@ export default function Profile() {
       return;
     }
 
-    const user = session.user;
     setUserId(user.id);
 
     const fullName =
@@ -78,7 +78,13 @@ export default function Profile() {
     setProfileName(fullName);
     setProfileEmail(email);
     setProfileInitials(initials);
-    setAvatarUrl(user.user_metadata?.avatar_url || null);
+    // Add cache buster to avatar URL to force refresh
+    const avatar = user.user_metadata?.avatar_url;
+    if (avatar) {
+      setAvatarUrl(`${avatar}?t=${Date.now()}`);
+    } else {
+      setAvatarUrl(null);
+    }
   }
 
   async function loadUserData(uid: string) {
@@ -97,29 +103,24 @@ export default function Profile() {
     }
   }
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      applySessionUser(session);
-      if (session?.user?.id) {
-        loadUserData(session.user.id);
+  // Reload user data every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      async function loadProfile() {
+        const { data: { user } } = await supabase.auth.getUser();
+        applySessionUser(user);
+        if (user?.id) {
+          loadUserData(user.id);
+        }
       }
-    });
-
-    fetchNotes()
-      .then((notes) => setNoteCount(notes.length))
-      .catch((err) => console.error("Failed to fetch notes:", err));
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      applySessionUser(session);
-      if (session?.user?.id) {
-        loadUserData(session.user.id);
-      }
-    });
-
-    return () => {
-      sub?.subscription.unsubscribe();
-    };
-  }, []);
+      
+      loadProfile();
+      
+      fetchNotes()
+        .then((notes) => setNoteCount(notes.length))
+        .catch((err) => console.error("Failed to fetch notes:", err));
+    }, [])
+  );
 
   return (
     <ScrollView
@@ -133,6 +134,9 @@ export default function Profile() {
             <Ionicons name="chevron-back" size={35} color={colors.icon} />
           </TouchableOpacity>
         </View>
+        <TouchableOpacity onPress={() => router.push('/edit-profile')}>
+          <Ionicons name="pencil" size={24} color={colors.icon} />
+        </TouchableOpacity>
       </View>
 
       {/* Profile Circle */}
@@ -308,10 +312,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     marginBottom: 25,
-    width: 500,
+    maxWidth: 500,
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
+    width: "100%",
   },
   sectionTitle: {
     fontSize: 16,
@@ -327,9 +332,10 @@ const styles = StyleSheet.create({
     gap: 25,
     width: "100%",
     marginTop: 10,
+    flexWrap: "wrap",
   },
   statCard: {
-    width: 200,
+    width: 150,
     height: 120,
     borderRadius: 16,
     justifyContent: "center",
@@ -347,7 +353,8 @@ const styles = StyleSheet.create({
   streakSection: {
     alignItems: "center",
     marginBottom: 13,
-    width: "60%",
+    width: "100%",
+    maxWidth: 400,
     alignSelf: "center",
   },
   streakNumber: {
@@ -363,9 +370,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     marginBottom: 25,
-    width: "60%",
+    maxWidth: 500,
+    width: "100%",
     alignSelf: "center",
-    gap: 20,
+    gap: 12,
     flexWrap: "wrap",
   },
   dayItem: {
@@ -381,7 +389,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     marginBottom: 25,
-    width: 650,
+    maxWidth: 650,
+    width: "100%",
     alignSelf: "center",
   },
   achievementHeader: {
@@ -394,12 +403,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 10,
-    gap: 20,
+    gap: 15,
     alignItems: "center",
     flexWrap: "wrap",
   },
   achievementCard: {
-    width: 160,
+    width: 140,
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",

@@ -170,28 +170,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingTop: 40,
+    paddingTop: 4,
   },
   promptContainer: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 12,
   },
   mascotImage: {
     width: 80,
     height: 80,
     resizeMode: 'contain',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   promptText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
+    textAlign: "center",
   },
   inputContainer: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 8,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 12,
   },
   dimmed: {
     opacity: 0.5,
@@ -204,6 +205,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: 12,
+    paddingBottom: 20,
   },
   button: {
     flex: 1,

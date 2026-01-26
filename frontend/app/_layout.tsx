@@ -1,45 +1,83 @@
-import { Slot, useRouter } from 'expo-router';
+import { Slot, useRouter, usePathname } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { LoadingProvider, useLoading } from '../context/LoadingContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-import { View, Text, Pressable, Alert, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { 
+  View, 
+  Text, 
+  Pressable, 
+  Alert, 
+  StyleSheet, 
+  Image, 
+  TouchableOpacity, 
+  Linking, 
+  Platform,
+  useWindowDimensions,
+  ScrollView,
+} from 'react-native';
 import { fetchNotes, getUserStats } from '../lib/api';
 import { Ionicons } from "@expo/vector-icons";
 import { initializeNotifications } from '../lib/notifications';
 import { isBiometricLockEnabled, authenticateWithBiometric } from '../lib/biometric';
 
+// Pages that should not show navigation (auth pages)
+const AUTH_PAGES = ['/login', '/signup', '/forgot-password', '/reset-password'];
+
+// Breakpoint for mobile vs desktop
+const MOBILE_BREAKPOINT = 768;
+
+// Sidebar
 function Sidebar({
   collapsed,
   onNavigate,
   onSignOut,
+  onClose,
   noteCount,
   tasksCompleted,
   profileName,
   profileEmail,
   profileInitials,
   avatarUrl,
+  isMobile,
 }: {
   collapsed: boolean;
   onNavigate: (path: string) => void;
   onSignOut: () => Promise<void>;
+  onClose: () => void;
   noteCount: number;
   tasksCompleted: number;
   profileName: string;
   profileEmail: string;
   profileInitials: string;
   avatarUrl: string | null;
+  isMobile: boolean;
 }) {
   const { colors } = useTheme();
   
   if (collapsed) return null;
 
-  return (
-    <View style={[styles.sidebar, { backgroundColor: colors.sidebar, borderRightColor: colors.border }]}>
+  const sidebarContent = (
+    <ScrollView 
+      style={[
+        styles.sidebarInner, 
+        { backgroundColor: colors.sidebar },
+        isMobile && styles.sidebarMobile
+      ]}
+      contentContainerStyle={[styles.sidebarContent, isMobile && styles.sidebarContentMobile]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Close button for mobile */}
+      {isMobile && (
+        <Pressable style={styles.closeButton} onPress={onClose}>
+          <Ionicons name="close" size={28} color={colors.icon} />
+        </Pressable>
+      )}
+
       <View style={styles.mascotSection}>
         <Image
           source={require('../assets/mascot.png')}
-          style={styles.mascotImage}
+          style={[styles.mascotImage, isMobile && styles.mascotImageMobile]}
         />
       </View>
 
@@ -50,47 +88,47 @@ function Sidebar({
         onPress={() => onNavigate('profile')}
       >
         <View style={styles.profileRow}>
-          <View style={[styles.profileCircle, { backgroundColor: colors.primaryDark }]}>
+          <View style={[styles.profileCircle, { backgroundColor: colors.primaryDark }, isMobile && styles.profileCircleMobile]}>
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={styles.profileImage} />
             ) : (
-              <Text style={styles.profileInitials}>{profileInitials}</Text>
+              <Text style={[styles.profileInitials, isMobile && styles.profileInitialsMobile]}>{profileInitials}</Text>
             )}
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, { color: colors.text }]}>{profileName}</Text>
-            <Text style={[styles.profileEmail, { color: colors.text }]}>{profileEmail}</Text>
+            <Text style={[styles.profileName, { color: colors.text }, isMobile && styles.profileNameMobile]}>{profileName}</Text>
+            <Text style={[styles.profileEmail, { color: colors.text }, isMobile && styles.profileEmailMobile]} numberOfLines={1}>{profileEmail}</Text>
           </View>
         </View>
 
-        <View style={styles.statsWrapper}>
+        <View style={[styles.statsWrapper, isMobile && styles.statsWrapperMobile]}>
           <View style={styles.statItem}>
-            <Ionicons name="document-text" size={23} color={colors.icon} />
+            <Ionicons name="document-text" size={isMobile ? 20 : 23} color={colors.icon} />
             <Text style={[styles.statText, { color: colors.text }]}>{noteCount}</Text>
           </View>
 
           <View style={styles.statItem}>
-            <Ionicons name="checkmark-circle" size={23} color={colors.icon} />
+            <Ionicons name="checkmark-circle" size={isMobile ? 20 : 23} color={colors.icon} />
             <Text style={[styles.statText, { color: colors.text }]}>{tasksCompleted}</Text>
           </View>
         </View>
       </Pressable>
 
-      <View style={styles.navSection}>
-        <Pressable style={styles.navButton} onPress={() => onNavigate('/dump')}>
+      <View style={[styles.navSection, isMobile && styles.navSectionMobile]}>
+        <Pressable style={[styles.navButton, { backgroundColor: colors.card }, isMobile && styles.navButtonMobile]} onPress={() => onNavigate('/dump')}>
           <Text style={[styles.navButtonText, { color: colors.text }]}>Dump</Text>
         </Pressable>
 
         <Pressable
-          style={[styles.navButton, styles.navButtonActive]}
+          style={[styles.navButton, { backgroundColor: colors.card }, isMobile && styles.navButtonMobile]}
           onPress={() => onNavigate('/notes')}
         >
-          <Ionicons name="journal" size={25} color={colors.icon} style={styles.navButtonIcon} />
+          <Ionicons name="journal" size={isMobile ? 22 : 25} color={colors.icon} style={styles.navButtonIcon} />
           <Text style={[styles.navButtonText, { color: colors.text }]}>Notes</Text>
         </Pressable>
 
         <Pressable
-          style={styles.navButton}
+          style={[styles.navButton, { backgroundColor: colors.card }, isMobile && styles.navButtonMobile]}
           onPress={() => onNavigate('/review')}
         >
           <Text style={[styles.navButtonText, { color: colors.text }]}>Review</Text>
@@ -99,28 +137,27 @@ function Sidebar({
 
       <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
 
-      <View style={[styles.quickActions, { marginTop: 18 }]}>
+      <View style={[styles.quickActions, { marginTop: 18 }, isMobile && styles.quickActionsMobile]}>
         <Pressable
-          style={styles.settingsButton}
+          style={[styles.settingsButton, { backgroundColor: colors.card }, isMobile && styles.navButtonMobile]}
           onPress={() => onNavigate('/settings')}
         >
           <Text style={[styles.navButtonText, { color: colors.text }]}>Settings</Text>
         </Pressable>
 
         <Pressable
-          style={styles.settingsButton}
+          style={[styles.settingsButton, { backgroundColor: colors.card }, isMobile && styles.navButtonMobile]}
           onPress={() => onNavigate('/help')}
         >
           <Text style={[styles.navButtonText, { color: colors.text }]}>Help & Support</Text>
         </Pressable>
       </View>
 
-      <View style={{ flex: 1 }} />
+      <View style={{ flex: 1, minHeight: 20 }} />
 
-      <View style={styles.bottomSection}>
-        <View style={{ marginTop: 8 }} />
+      <View style={[styles.bottomSection, isMobile && styles.bottomSectionMobile]}>
         <Pressable
-          style={[styles.signOutButton, { backgroundColor: colors.primaryDark, borderColor: colors.border }]}
+          style={[styles.signOutButton, { backgroundColor: colors.primaryDark, borderColor: colors.border }, isMobile && styles.signOutButtonMobile]}
           onPress={async () => {
             try {
               await onSignOut();
@@ -129,10 +166,27 @@ function Sidebar({
             }
           }}
         >
-          <Ionicons name="log-out-outline" size={28} color={colors.icon} style={styles.navButtonIcon} />
+          <Ionicons name="log-out-outline" size={isMobile ? 24 : 28} color={colors.icon} style={styles.navButtonIcon} />
           <Text style={[styles.signOutText, { color: colors.text }]}>Sign Out</Text>
         </Pressable>
       </View>
+    </ScrollView>
+  );
+
+  // Mobile: overlay drawer
+  if (isMobile) {
+    return (
+      <View style={styles.mobileOverlay}>
+        <Pressable style={styles.mobileBackdrop} onPress={onClose} />
+        {sidebarContent}
+      </View>
+    );
+  }
+
+  // Desktop: fixed sidebar
+  return (
+    <View style={[styles.sidebar, { backgroundColor: colors.sidebar, borderRightColor: colors.border }]}>
+      {sidebarContent}
     </View>
   );
 }
@@ -140,9 +194,14 @@ function Sidebar({
 // Wrapper component that has access to theme and loading context
 function LayoutContent() {
   const router = useRouter();
+  const pathname = usePathname();
   const loading = useLoading();
   const { colors } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
+  const { width } = useWindowDimensions();
+  
+  const isMobile = width < MOBILE_BREAKPOINT;
+  
+  const [collapsed, setCollapsed] = useState(true); // Start collapsed on mobile
   const [showMenu, setShowMenu] = useState(false);
   const [noteCount, setNoteCount] = useState(0);
   const [tasksCompleted, setTasksCompleted] = useState(0);
@@ -153,6 +212,9 @@ function LayoutContent() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(true);
   const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
+
+  // Check if current page is an auth page (no nav shown)
+  const isAuthPage = AUTH_PAGES.some(page => pathname === page || pathname.startsWith(page));
 
   function applySessionUser(session: any | null) {
     if (!session || !session.user) {
@@ -255,6 +317,56 @@ function LayoutContent() {
     // Check biometric lock first
     checkBiometricLock();
 
+    // Handle deep links for password reset (mobile only)
+    let linkingSubscription: any = null;
+    
+    if (Platform.OS !== 'web') {
+      const handleDeepLink = async (event: { url: string }) => {
+        const url = event.url;
+        console.log('Deep link received:', url);
+        
+        if (url.includes('reset-password') || url.includes('type=recovery')) {
+          if (url.includes('access_token')) {
+            try {
+              const hashPart = url.split('#')[1];
+              if (hashPart) {
+                const params = new URLSearchParams(hashPart);
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+                
+                if (accessToken && refreshToken) {
+                  const { error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                  });
+                  
+                  if (!error) {
+                    setShowMenu(false);
+                    router.replace('/reset-password');
+                    return;
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('Error parsing deep link:', err);
+            }
+          }
+          
+          setShowMenu(false);
+          router.replace('/reset-password');
+          return;
+        }
+      };
+
+      Linking.getInitialURL().then((url) => {
+        if (url) {
+          handleDeepLink({ url });
+        }
+      });
+
+      linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setShowMenu(true);
@@ -273,8 +385,26 @@ function LayoutContent() {
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session) {
+      async (event, session) => {
+        console.log('Auth event:', event);
+        
+        // Handle PASSWORD_RECOVERY event (works on web)
+        if (event === 'PASSWORD_RECOVERY') {
+          setShowMenu(false);
+          router.replace('/reset-password');
+          return;
+        }
+        
+        // Ignore USER_UPDATED events (profile changes) - don't redirect
+        if (event === 'USER_UPDATED') {
+          if (session) {
+            applySessionUser(session);
+          }
+          return;
+        }
+        
+        // Only redirect on SIGNED_IN or SIGNED_OUT
+        if (event === 'SIGNED_IN' && session) {
           setShowMenu(true);
           applySessionUser(session);
           router.replace('/home');
@@ -282,7 +412,7 @@ function LayoutContent() {
           if (session.user?.id) {
             await loadUserStats(session.user.id);
           }
-        } else {
+        } else if (event === 'SIGNED_OUT' || !session) {
           setShowMenu(false);
           applySessionUser(null);
           router.replace('/login');
@@ -292,7 +422,12 @@ function LayoutContent() {
       }
     );
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      sub.subscription.unsubscribe();
+      if (linkingSubscription) {
+        linkingSubscription.remove();
+      }
+    };
   }, [router]);
 
   async function handleSignOut() {
@@ -303,8 +438,15 @@ function LayoutContent() {
     setTasksCompleted(0);
   }
 
-  async function handleNavigate(path: string) {
+  function handleNavigate(path: string) {
     router.push(path);
+    // Always collapse on mobile, optionally on desktop
+    if (isMobile) {
+      setCollapsed(true);
+    }
+  }
+
+  function handleCloseSidebar() {
     setCollapsed(true);
   }
 
@@ -337,30 +479,35 @@ function LayoutContent() {
     );
   }
 
+  // Always use sidebar layout (removed mobile bottom tabs)
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {showMenu && (
+    <View style={[styles.container, { backgroundColor: colors.background }, isMobile && styles.containerMobile]}>
+      {showMenu && !isAuthPage && (
         <Sidebar
           collapsed={collapsed}
           onNavigate={handleNavigate}
           onSignOut={handleSignOut}
+          onClose={handleCloseSidebar}
           noteCount={noteCount}
           tasksCompleted={tasksCompleted}
           profileName={profileName}
           profileEmail={profileEmail}
           profileInitials={profileInitials}
           avatarUrl={avatarUrl}
+          isMobile={isMobile}
         />
       )}
-      <View style={[styles.content, { backgroundColor: colors.background }]}>
-        <View style={[styles.headerRow, { borderBottomColor: colors.border }]}>
-          <Pressable
-            onPress={() => setCollapsed((s) => !s)}
-            style={styles.menuButton}
-          >
-            {showMenu && <Text style={[{ fontSize: 30 }, { color: colors.text }]}>{'☰'}</Text>}
-          </Pressable>
-        </View>
+      <View style={[styles.content, { backgroundColor: colors.background }, isMobile && styles.contentMobile]}>
+        {showMenu && !isAuthPage && (
+          <View style={[styles.headerRow, { borderBottomColor: colors.border }, isMobile && styles.headerRowMobile]}>
+            <Pressable
+              onPress={() => setCollapsed((s) => !s)}
+              style={styles.menuButton}
+            >
+              <Text style={[{ fontSize: 30 }, { color: colors.text }]}>{'☰'}</Text>
+            </Pressable>
+          </View>
+        )}
         <Slot />
       </View>
     </View>
@@ -385,10 +532,32 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
+  containerMobile: {
+    flexDirection: 'column',
+  },
+
+  // Mobile overlay for drawer
+  mobileOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    flexDirection: 'row',
+  },
+
+  mobileBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+
   sidebar: {
     width: 320,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRightWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -397,8 +566,36 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 
-  sidebarCollapsed: {
-    display: 'none',
+  sidebarInner: {
+    flex: 1,
+  },
+
+  sidebarContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexGrow: 1,
+  },
+
+  sidebarContentMobile: {
+    paddingTop: 70,
+  },
+
+  sidebarMobile: {
+    width: '85%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+
+  closeButton: {
+    position: 'absolute',
+    top: 70,
+    right: 12,
+    zIndex: 10,
+    padding: 8,
   },
 
   mascotSection: {
@@ -411,6 +608,11 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     resizeMode: 'contain',
+  },
+
+  mascotImageMobile: {
+    width: 80,
+    height: 80,
   },
 
   dividerLine: {
@@ -444,6 +646,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  profileCircleMobile: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    bottom: 0,
+    left: 0,
+    marginRight: 12,
+  },
+
   profileImage: {
     width: '100%',
     height: '100%',
@@ -456,6 +667,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
+  profileInitialsMobile: {
+    fontSize: 18,
+  },
+
   profileInfo: {
     flex: 1,
   },
@@ -466,9 +681,18 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
+  profileNameMobile: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+
   profileEmail: {
     fontSize: 13,
     textDecorationLine: 'underline',
+  },
+
+  profileEmailMobile: {
+    fontSize: 12,
   },
 
   statsWrapper: {
@@ -478,6 +702,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
+  },
+
+  statsWrapperMobile: {
+    position: 'relative',
+    right: 0,
+    bottom: 0,
+    marginTop: 12,
+    justifyContent: 'flex-start',
+    gap: 20,
   },
 
   statItem: {
@@ -497,12 +730,15 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
 
+  navSectionMobile: {
+    marginTop: 20,
+  },
+
   navButton: {
     width: '85%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#000000',
@@ -510,6 +746,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 22,
     height: 44,
+  },
+
+  navButtonMobile: {
+    width: '100%',
+    marginBottom: 14,
+    height: 42,
   },
 
   navButtonIcon: {
@@ -523,18 +765,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  navButtonActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
   bottomSection: {
     paddingTop: 12,
     paddingBottom: 60,
     alignItems: 'center',
+  },
+
+  bottomSectionMobile: {
+    paddingBottom: 30,
   },
 
   quickActions: {
@@ -543,8 +781,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  quickActionsMobile: {
+    paddingHorizontal: 0,
+    marginTop: 10,
+  },
+
   settingsButton: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#000000',
@@ -570,16 +812,9 @@ const styles = StyleSheet.create({
     height: 44,
   },
 
-  signOutIcon: {
-    fontSize: 70,
-    marginRight: 10,
-  },
-
-  signOutIconImage: {
-    width: 30,
-    height: 30,
-    marginRight: 15,
-    resizeMode: 'contain',
+  signOutButtonMobile: {
+    width: '100%',
+    height: 42,
   },
 
   signOutText: {
@@ -593,6 +828,11 @@ const styles = StyleSheet.create({
     padding: 18,
   },
 
+  contentMobile: {
+    marginLeft: 0,
+    padding: 12,
+  },
+
   headerRow: {
     height: 52,
     flexDirection: 'row',
@@ -600,6 +840,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: 12,
     borderBottomWidth: 1,
+  },
+
+  headerRowMobile: {
+    height: 100,
+    paddingTop: 50,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    borderBottomWidth: 0,
   },
 
   menuButton: {

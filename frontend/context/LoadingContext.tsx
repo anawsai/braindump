@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useTheme } from './ThemeContext';
 
 type LoadingContextType = {
   active: boolean;
@@ -22,18 +23,15 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const startAt = useRef<number | null>(null);
 
   const start = useCallback((msg?: string) => {
-    if (!active) {
-      startAt.current = Date.now();
-      setActive(true);
-      setMessage(msg);
-    } else {
-      if (msg) setMessage(msg);
-    }
-  }, [active]);
+    startAt.current = Date.now();
+    setActive(true);
+    setMessage(msg);
+  }, []);
 
   const stop = useCallback(() => {
     const start = startAt.current ?? Date.now();
     const elapsed = Date.now() - start;
+    // Keep 2 second minimum for your loading animation
     const wait = Math.max(0, 2000 - elapsed);
     setTimeout(() => {
       setActive(false);
@@ -45,12 +43,20 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   return (
     <LoadingContext.Provider value={{ active, message, start, stop }}>
       {children}
-      {active && (
-        <View style={styles.loadingOverlay} pointerEvents="auto">
-          <Text style={styles.loadingText}>{message ?? 'Loading...'}</Text>
-        </View>
-      )}
+      {active && <LoadingOverlay message={message} />}
     </LoadingContext.Provider>
+  );
+}
+
+// Separate component so it can use theme
+function LoadingOverlay({ message }: { message?: string }) {
+  const { colors } = useTheme();
+  
+  return (
+    <View style={[styles.loadingOverlay, { backgroundColor: colors.primary }]} pointerEvents="auto">
+      <ActivityIndicator size="large" color={colors.text} />
+      <Text style={[styles.loadingText, { color: colors.text }]}>{message ?? 'Loading...'}</Text>
+    </View>
   );
 }
 
@@ -64,12 +70,10 @@ const styles = StyleSheet.create({
     zIndex: 999,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgb(255, 176, 82)'
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#333',
     fontWeight: '600'
   }
 });
