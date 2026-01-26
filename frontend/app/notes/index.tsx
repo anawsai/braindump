@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
@@ -58,7 +60,10 @@ function NoteCard({
 
   return (
     <TouchableOpacity
-      onPress={() => router.push({ pathname: "/note-detail/[id]", params: { id: item.id } })}
+      onPress={() => {
+        Keyboard.dismiss();
+        router.push({ pathname: "/note-detail/[id]", params: { id: item.id } });
+      }}
       activeOpacity={0.7}
     >
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.accent }]}>
@@ -83,6 +88,7 @@ function NoteCard({
             style={styles.menuButton}
             onPress={(e) => {
               e.stopPropagation();
+              Keyboard.dismiss();
               setOpenMenuId(isOpen ? null : (item.id as string));
             }}
           >
@@ -156,6 +162,10 @@ export default function NotesPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   // Reload data every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -215,37 +225,49 @@ export default function NotesPage() {
       <Text style={[styles.heading, { color: colors.text }]}>Notes</Text>
 
       {/* Search bar */}
-      <View style={[styles.searchRow, { borderColor: colors.border }]}>
-        <Ionicons
-          name="search"
-          size={20}
-          color={colors.textSecondary}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          placeholder="Search your thoughts..."
-          placeholderTextColor={colors.placeholder}
-          value={query}
-          onChangeText={setQuery}
-          style={[styles.searchInput, { color: colors.text }]}
-          returnKeyType="search"
-        />
-      </View>
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <View style={[styles.searchRow, { borderColor: colors.border }]}>
+          <Ionicons
+            name="search"
+            size={20}
+            color={colors.textSecondary}
+            style={styles.searchIcon}
+          />
+          <TextInput
+            placeholder="Search your thoughts..."
+            placeholderTextColor={colors.placeholder}
+            value={query}
+            onChangeText={setQuery}
+            style={[styles.searchInput, { color: colors.text }]}
+            returnKeyType="search"
+            onSubmitEditing={dismissKeyboard}
+          />
+        </View>
+      </TouchableWithoutFeedback>
 
       {/* Add + chips */}
       <View style={styles.controlsRow}>
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: colors.primary, borderColor: colors.accent }]}
-          onPress={() => router.push("/add-notes/add-notes")}
+          onPress={() => {
+            dismissKeyboard();
+            router.push("/add-notes/add-notes");
+          }}
         >
           <Text style={[styles.addButtonText, { color: colors.text }]}>＋ Add Note</Text>
         </TouchableOpacity>
 
         <View style={styles.chipsRow}>
-          <TouchableOpacity style={[styles.chip, styles.chipActive, { backgroundColor: colors.primary, borderColor: colors.accent }]}>
+          <TouchableOpacity 
+            style={[styles.chip, styles.chipActive, { backgroundColor: colors.primary, borderColor: colors.accent }]}
+            onPress={dismissKeyboard}
+          >
             <Text style={[styles.chipText, { color: colors.text }]}>all ({allCount})</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.chip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.accent }]}>
+          <TouchableOpacity 
+            style={[styles.chip, { backgroundColor: colors.surfaceSecondary, borderColor: colors.accent }]}
+            onPress={dismissKeyboard}
+          >
             <Text style={[styles.chipText, { color: colors.text }]}>today ({todayCount})</Text>
           </TouchableOpacity>
         </View>
@@ -256,6 +278,8 @@ export default function NotesPage() {
         keyExtractor={(item, i) => item.id ?? String(i)}
         contentContainerStyle={{ paddingBottom: 100 }}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={dismissKeyboard}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />

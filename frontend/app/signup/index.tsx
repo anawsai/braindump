@@ -10,6 +10,9 @@ import {
   StatusBar,
   Alert,
   Image,
+  Keyboard,
+  TouchableWithoutFeedback,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -25,6 +28,10 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   async function handleSignup() {
     if (!email || !password || !confirmPassword) {
@@ -42,6 +49,7 @@ export default function Signup() {
       return;
     }
     
+    dismissKeyboard();
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -77,101 +85,109 @@ export default function Signup() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.select({ ios: "padding", android: undefined })}
-      style={[styles.container, { backgroundColor: colors.primary }]}
-    >
-      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+    <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.select({ ios: "padding", android: "height" })}
+        style={[styles.container, { backgroundColor: colors.primary }]}
+      >
+        <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
 
-      {/* Top section with mascot */}
-      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
-          <Image 
-            source={require('../../assets/mascot.png')} 
-            style={styles.mascotImage}
-          />
-        </View>
-      </View>
-
-      {/* Orange form section */}
-      <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
-        <Text style={[styles.welcomeTitle, { color: colors.text }]}>Create Account</Text>
-
-        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholderTextColor={colors.placeholder}
-          placeholder="email@example.com"
-        />
-
-        <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-        <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
-          <TextInput
-            style={[styles.passwordInput, { color: colors.text }]}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-            placeholderTextColor={colors.placeholder}
-            placeholder="At least 6 characters"
-          />
-          <TouchableOpacity 
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeButton}
-          >
-            <Ionicons 
-              name={showPassword ? "eye-off-outline" : "eye-outline"} 
-              size={22} 
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
-        <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
-          <TextInput
-            style={[styles.passwordInput, { color: colors.text }]}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            autoCapitalize="none"
-            placeholderTextColor={colors.placeholder}
-            placeholder="Re-enter password"
-          />
-          <TouchableOpacity 
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            style={styles.eyeButton}
-          >
-            <Ionicons 
-              name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
-              size={22} 
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.signupButton, { backgroundColor: colors.text }]}
-          onPress={handleSignup}
-          disabled={loading}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
-          <Text style={[styles.signupButtonText, { color: colors.primary }]}>
-            {loading ? 'Creating Account...' : 'SIGN UP'}
-          </Text>
-        </TouchableOpacity>
+          {/* Top section with mascot */}
+          <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
+            <View style={[styles.brainContainer, { backgroundColor: colors.primary }]}>
+              <Image 
+                source={require('../../assets/mascot.png')} 
+                style={styles.mascotImage}
+              />
+            </View>
+          </View>
 
-        <View style={styles.loginContainer}>
-          <Text style={[styles.loginText, { color: colors.text }]}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/login')}>
-            <Text style={[styles.loginLink, { color: colors.text }]}>Login here!</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+          {/* Orange form section */}
+          <View style={[styles.formSection, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.welcomeTitle, { color: colors.text }]}>Create Account</Text>
+
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholderTextColor={colors.placeholder}
+              placeholder="email@example.com"
+            />
+
+            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+            <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: colors.text }]}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                placeholderTextColor={colors.placeholder}
+                placeholder="At least 6 characters"
+              />
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={22} 
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
+            <View style={[styles.passwordContainer, { backgroundColor: colors.background }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: colors.text }]}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                placeholderTextColor={colors.placeholder}
+                placeholder="Re-enter password"
+              />
+              <TouchableOpacity 
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeButton}
+              >
+                <Ionicons 
+                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={22} 
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.signupButton, { backgroundColor: colors.text }]}
+              onPress={handleSignup}
+              disabled={loading}
+            >
+              <Text style={[styles.signupButtonText, { color: colors.primary }]}>
+                {loading ? 'Creating Account...' : 'SIGN UP'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.loginContainer}>
+              <Text style={[styles.loginText, { color: colors.text }]}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/login')}>
+                <Text style={[styles.loginLink, { color: colors.text }]}>Login here!</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -179,8 +195,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   topSection: {
-    flex: 0.3,
+    height: 180,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -197,11 +216,12 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   formSection: {
-    flex: 0.7,
+    flex: 1,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
     paddingTop: 35,
+    paddingBottom: 40,
   },
   welcomeTitle: {
     fontSize: 26,

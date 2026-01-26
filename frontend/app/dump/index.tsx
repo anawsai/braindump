@@ -8,6 +8,11 @@ import {
   StatusBar,
   Image,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { addNote, fetchNotes } from "../../lib/api";
 import { useLoading } from '../../context/LoadingContext';
@@ -17,9 +22,13 @@ import { checkForStressPatterns, getRecentDumpCount } from '../../lib/notificati
 export default function Notes() {
   const { colors } = useTheme();
   const [noteText, setNoteText] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [savingMode, setSavingMode] = useState<'none' | 'save' | 'organize'>('none');
   const loading = useLoading();
   const [prompt, setPrompt] = useState("What's on your mind today>");
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   useEffect(() => {
     setPrompt(getRandomPrompt());
@@ -31,7 +40,7 @@ export default function Notes() {
       return;
     }
     try {
-      setSaving(true);
+      setSavingMode('save');
       loading.start('Saving...');
       
       // Regular save - no AI organization
@@ -42,10 +51,11 @@ export default function Notes() {
       
       Alert.alert('Success', 'Note saved!');
       setNoteText('');
+      dismissKeyboard();
     } catch (e:any) {
       Alert.alert('Error', e.message);
     } finally {
-      setSaving(false);
+      setSavingMode('none');
       loading.stop();
     }
   }
@@ -56,7 +66,7 @@ export default function Notes() {
       return;
     }
     try {
-      setSaving(true);
+      setSavingMode('organize');
       loading.start('Organizing...');
       
       // Organize mode - AI generates title and category
@@ -67,10 +77,11 @@ export default function Notes() {
       
       Alert.alert('Success', 'Note organized and saved!');
       setNoteText('');
+      dismissKeyboard();
     } catch (e:any) {
       Alert.alert('Error', e.message);
     } finally {
-      setSaving(false);
+      setSavingMode('none');
       loading.stop();
     }
   }
@@ -109,60 +120,66 @@ export default function Notes() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }, (loading.active || saving) && styles.dimmed]}>
-      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+    <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+      <KeyboardAvoidingView 
+        style={[styles.container, { backgroundColor: colors.background }, (loading.active || savingMode !== 'none') && styles.dimmed]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
+        <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
 
-      {/* Mascot prompt */}
-      <View style={styles.promptContainer}>
-        <Image 
-          source={require('../../assets/mascot.png')} 
-          style={styles.mascotImage}
-        />
-        <Text style={[styles.promptText, { color: colors.text }]}>{prompt}</Text>
-      </View>
+        {/* Mascot prompt */}
+        <View style={styles.promptContainer}>
+          <Image 
+            source={require('../../assets/mascot.png')} 
+            style={styles.mascotImage}
+          />
+          <Text style={[styles.promptText, { color: colors.text }]}>{prompt}</Text>
+        </View>
 
-      {/* Text input area */}
-      <View style={[
-        styles.inputContainer, 
-        { 
-          borderColor: colors.border, 
-          backgroundColor: colors.input 
-        },
-        (loading.active || saving) && styles.dimmed
-      ]}>
-        <TextInput
-          placeholder="What's on your mind? Ideas, tasks, random thoughts, anything...."
-          placeholderTextColor={colors.placeholder}
-          multiline
-          value={noteText}
-          onChangeText={setNoteText}
-          style={[styles.textInput, { color: colors.text }]}
-          editable={!loading.active}
-        />
-      </View>
+        {/* Text input area */}
+        <View style={[
+          styles.inputContainer, 
+          { 
+            borderColor: colors.border, 
+            backgroundColor: colors.input 
+          },
+          (loading.active || savingMode !== 'none') && styles.dimmed
+        ]}>
+          <TextInput
+            placeholder="What's on your mind? Ideas, tasks, random thoughts, anything...."
+            placeholderTextColor={colors.placeholder}
+            multiline
+            value={noteText}
+            onChangeText={setNoteText}
+            style={[styles.textInput, { color: colors.text }]}
+            editable={!loading.active && savingMode === 'none'}
+          />
+        </View>
 
-      {/* Buttons */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={saveNote}
-          disabled={saving || loading.active}
-        >
-          <Text style={[styles.buttonText, { color: colors.text }]}>
-            {saving ? 'Saving...' : 'Save'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={saveAndOrganize}
-          disabled={saving || loading.active}
-        >
-          <Text style={[styles.buttonText, { color: colors.text }]}>
-            {saving ? 'Saving...' : 'Save & Organize'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+        {/* Buttons */}
+        <View style={styles.buttonRow}>
+          <TouchableOpacity 
+            style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={saveNote}
+            disabled={savingMode !== 'none' || loading.active}
+          >
+            <Text style={[styles.buttonText, { color: colors.text }]}>
+              {savingMode === 'save' ? 'Saving...' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.button, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={saveAndOrganize}
+            disabled={savingMode !== 'none' || loading.active}
+          >
+            <Text style={[styles.buttonText, { color: colors.text }]}>
+              {savingMode === 'organize' ? 'Organizing...' : 'Save & Organize'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 

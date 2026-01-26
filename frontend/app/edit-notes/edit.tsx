@@ -10,6 +10,11 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,8 +33,12 @@ export default function EditNote() {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Health");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingMode, setSavingMode] = useState<'none' | 'save' | 'organize'>('none');
   const [loading, setLoadingNote] = useState(isEditing);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   useEffect(() => {
     if (!isEditing) return;
@@ -58,7 +67,8 @@ export default function EditNote() {
       return;
     }
 
-    setSaving(true);
+    setSavingMode('save');
+    dismissKeyboard();
     try {
       if (isEditing) {
         await updateNote(String(id), {
@@ -81,7 +91,7 @@ export default function EditNote() {
       console.error("Failed to save note", e);
       Alert.alert("Error", e.message || "Failed to save note");
     } finally {
-      setSaving(false);
+      setSavingMode('none');
     }
   }
 
@@ -91,7 +101,8 @@ export default function EditNote() {
       return;
     }
 
-    setSaving(true);
+    setSavingMode('organize');
+    dismissKeyboard();
     try {
       if (isEditing) {
         await updateNote(String(id), {
@@ -112,7 +123,7 @@ export default function EditNote() {
       console.error("Failed to organize note", e);
       Alert.alert("Error", e.message || "Failed to organize note");
     } finally {
-      setSaving(false);
+      setSavingMode('none');
     }
   }
 
@@ -125,114 +136,133 @@ export default function EditNote() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
-
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color={colors.icon} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Note</Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      {/* Title Section */}
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: colors.text }]}>Title</Text>
-        <View style={[styles.titleContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TextInput
-            style={[styles.titleInput, { color: colors.text }]}
-            placeholder="Title"
-            placeholderTextColor={colors.placeholder}
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TouchableOpacity
-            style={[styles.categoryBadge, { backgroundColor: colors.primary, borderColor: colors.border }]}
-            onPress={() => setShowCategoryPicker(true)}
-          >
-            <Ionicons name="star" size={14} color={colors.icon} style={{ marginRight: 4 }} />
-            <Text style={[styles.categoryText, { color: colors.text }]}>{category}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Content Section */}
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: colors.text }]}>Content</Text>
-        <TextInput
-          style={[styles.contentInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-          placeholder="What's the plan for today...."
-          placeholderTextColor={colors.placeholder}
-          value={content}
-          onChangeText={setContent}
-          multiline
-          textAlignVertical="top"
-        />
-      </View>
-
-      {/* Bottom Buttons */}
-      <View style={[styles.bottomSection, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            <Text style={[styles.buttonText, { color: colors.text }]}>{saving ? 'Saving...' : 'Save'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.organizeButton, { backgroundColor: colors.primary, borderColor: colors.border }]}
-            onPress={handleOrganize}
-            disabled={saving}
-          >
-            <Text style={[styles.buttonText, { color: colors.text }]}>{saving ? 'Organizing...' : 'Organize'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Category Picker Modal */}
-      <Modal
-        visible={showCategoryPicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCategoryPicker(false)}
+    <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+      <KeyboardAvoidingView 
+        style={[styles.container, { backgroundColor: colors.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Category</Text>
-              <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                <Ionicons name="close" size={24} color={colors.icon} />
+        <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="close" size={28} color={colors.icon} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Note</Text>
+          <View style={{ width: 50 }} />
+        </View>
+
+        <ScrollView 
+          style={styles.scrollContent}
+          contentContainerStyle={styles.scrollContentContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Title Section */}
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>Title</Text>
+            <View style={[styles.titleContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.titleInput, { color: colors.text }]}
+                placeholder="Title"
+                placeholderTextColor={colors.placeholder}
+                value={title}
+                onChangeText={setTitle}
+              />
+              <TouchableOpacity
+                style={[styles.categoryBadge, { backgroundColor: colors.primary, borderColor: colors.border }]}
+                onPress={() => {
+                  dismissKeyboard();
+                  setShowCategoryPicker(true);
+                }}
+              >
+                <Ionicons name="star" size={14} color={colors.icon} style={{ marginRight: 4 }} />
+                <Text style={[styles.categoryText, { color: colors.text }]}>{category}</Text>
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={CATEGORIES}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.categoryItem,
-                    { borderBottomColor: colors.border },
-                    category === item && { backgroundColor: colors.surface },
-                  ]}
-                  onPress={() => {
-                    setCategory(item);
-                    setShowCategoryPicker(false);
-                  }}
-                >
-                  <Text style={[styles.categoryItemText, { color: colors.text }]}>{item}</Text>
-                  {category === item && (
-                    <Ionicons name="checkmark" size={20} color={colors.primary} />
-                  )}
-                </TouchableOpacity>
-              )}
+          </View>
+
+          {/* Content Section */}
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: colors.text }]}>Content</Text>
+            <TextInput
+              style={[styles.contentInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
+              placeholder="What's the plan for today...."
+              placeholderTextColor={colors.placeholder}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              textAlignVertical="top"
             />
           </View>
+        </ScrollView>
+
+        {/* Bottom Buttons */}
+        <View style={[styles.bottomSection, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={handleSave}
+              disabled={savingMode !== 'none'}
+            >
+              <Text style={[styles.buttonText, { color: colors.text }]}>{savingMode === 'save' ? 'Saving...' : 'Save'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.organizeButton, { backgroundColor: colors.primary, borderColor: colors.border }]}
+              onPress={handleOrganize}
+              disabled={savingMode !== 'none'}
+            >
+              <Text style={[styles.buttonText, { color: colors.text }]}>{savingMode === 'organize' ? 'Organizing...' : 'Organize'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </Modal>
-    </View>
+
+        {/* Category Picker Modal */}
+        <Modal
+          visible={showCategoryPicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowCategoryPicker(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowCategoryPicker(false)}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+                  <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.modalTitle, { color: colors.text }]}>Select Category</Text>
+                    <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
+                      <Ionicons name="close" size={24} color={colors.icon} />
+                    </TouchableOpacity>
+                  </View>
+                  <FlatList
+                    data={CATEGORIES}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[
+                          styles.categoryItem,
+                          { borderBottomColor: colors.border },
+                          category === item && { backgroundColor: colors.surface },
+                        ]}
+                        onPress={() => {
+                          setCategory(item);
+                          setShowCategoryPicker(false);
+                        }}
+                      >
+                        <Text style={[styles.categoryItemText, { color: colors.text }]}>{item}</Text>
+                        {category === item && (
+                          <Ionicons name="checkmark" size={20} color={colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -256,6 +286,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "600",
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    paddingBottom: 140,
   },
   section: {
     paddingHorizontal: 20,
@@ -297,7 +333,6 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     minHeight: 250,
-    marginBottom: 120,
   },
   bottomSection: {
     position: "absolute",
