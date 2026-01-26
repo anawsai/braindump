@@ -103,7 +103,7 @@ export default function Notes() {
   const prompts: string[] = [
     "What's on your mind today?",
     "Are there any tasks you need to accomplish?",
-    "What's are some goals you have for the week?",
+    "What are some goals you have for the week?",
     "What do you need to get off your chest?",
     "Is there something you've been procrastinating on?",
     "What makes you feel overwhelmed?",

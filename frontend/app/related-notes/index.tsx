@@ -100,7 +100,7 @@ export default function RelatedNotes() {
 
         <View style={styles.emptyContainer}>
           <Image
-            source={require("../../assets/mascot.png")}
+            source={require("../../assets/mascot_dump.png")}
             style={styles.mascot}
           />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No Related Notes Found</Text>
