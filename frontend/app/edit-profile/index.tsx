@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -131,34 +130,54 @@ export default function EditProfile() {
   }
 
   async function uploadAvatar(uri: string): Promise<string | null> {
-    if (!userId) return null;
+    if (!userId) {
+      console.error("No user ID for avatar upload");
+      return null;
+    }
 
     try {
-      // Create file name
+      console.log("Starting avatar upload for user:", userId);
+      console.log("Image URI:", uri);
+
+      // Create file name with timestamp to avoid caching issues
       const fileExt = uri.split(".").pop()?.toLowerCase() || "jpg";
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = fileName;
 
-      // Convert to blob
+      console.log("File path:", filePath);
+
+      // Fetch the image as a blob - works on both web and native
       const response = await fetch(uri);
-      const file = await response.blob();
+      const blob = await response.blob();
+      
+      console.log("Blob size:", blob.size, "Type:", blob.type);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      // Convert blob to ArrayBuffer for more reliable upload
+      const arrayBuffer = await new Response(blob).arrayBuffer();
+      
+      console.log("ArrayBuffer size:", arrayBuffer.byteLength);
+
+      const uploadResult = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, {
+        .upload(filePath, arrayBuffer, {
           cacheControl: "3600",
           upsert: true,
+          contentType: blob.type || `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
         });
 
-      if (uploadError) {
-        throw uploadError;
+      if (uploadResult.error) {
+        console.error("Upload error:", uploadResult.error);
+        throw uploadResult.error;
       }
+
+      console.log("Upload successful:", uploadResult.data);
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
+
+      console.log("Public URL:", urlData.publicUrl);
 
       return urlData.publicUrl;
 
@@ -188,20 +207,37 @@ export default function EditProfile() {
 
       // If there's a pending image, upload it now
       if (pendingImageUri) {
-        const newAvatarUrl = await uploadAvatar(pendingImageUri);
-        if (newAvatarUrl) {
-          updateData.avatar_url = newAvatarUrl;
+        console.log("Uploading pending image...");
+        try {
+          const newAvatarUrl = await uploadAvatar(pendingImageUri);
+          if (newAvatarUrl) {
+            updateData.avatar_url = newAvatarUrl;
+            console.log("Avatar URL to save:", newAvatarUrl);
+          } else {
+            console.warn("Upload returned null URL");
+          }
+        } catch (uploadError: any) {
+          console.error("Avatar upload failed:", uploadError);
+          Alert.alert(
+            "Upload Failed", 
+            `Could not upload profile picture: ${uploadError.message || 'Unknown error'}. Your other profile changes will still be saved.`
+          );
         }
       }
 
+      console.log("Updating user metadata:", updateData);
+
       // Update user metadata
-      const { error: metadataError } = await supabase.auth.updateUser({
+      const { data, error: metadataError } = await supabase.auth.updateUser({
         data: updateData,
       });
 
       if (metadataError) {
+        console.error("Metadata update error:", metadataError);
         throw metadataError;
       }
+
+      console.log("User updated successfully:", data);
 
       // Clear the pending image since it's now saved
       setPendingImageUri(null);
