@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
@@ -11,7 +12,6 @@ import {
   StyleSheet, 
   Image, 
   TouchableOpacity, 
-  Linking, 
   Platform,
   useWindowDimensions,
   ScrollView,
@@ -325,45 +325,63 @@ function LayoutContent() {
         const url = event.url;
         console.log('Deep link received:', url);
         
+        // Check if this is a password reset link
         if (url.includes('reset-password') || url.includes('type=recovery')) {
-          if (url.includes('access_token')) {
-            try {
-              const hashPart = url.split('#')[1];
-              if (hashPart) {
-                const params = new URLSearchParams(hashPart);
-                const accessToken = params.get('access_token');
-                const refreshToken = params.get('refresh_token');
+          // Parse tokens from hash fragment manually
+          const hashIndex = url.indexOf('#');
+          if (hashIndex !== -1) {
+            const hashPart = url.substring(hashIndex + 1);
+            const params = new URLSearchParams(hashPart);
+            
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            const type = params.get('type');
+            
+            console.log('Access token found:', !!accessToken);
+            console.log('Refresh token found:', !!refreshToken);
+            console.log('Type:', type);
+            
+            if (accessToken && refreshToken) {
+              try {
+                console.log('Attempting to set session...');
+                const { data, error } = await supabase.auth.setSession({
+                  access_token: accessToken,
+                  refresh_token: refreshToken,
+                });
                 
-                if (accessToken && refreshToken) {
-                  const { error } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken,
-                  });
-                  
-                  if (!error) {
-                    setShowMenu(false);
-                    router.replace('/reset-password');
-                    return;
-                  }
+                console.log('setSession result - data:', !!data);
+                console.log('setSession result - error:', error);
+                
+                if (error) {
+                  console.error('Error setting session:', error.message);
+                  Alert.alert('Error', error.message);
+                  return;
                 }
+                
+                console.log('Session set successfully!');
+                setShowMenu(false);
+                router.replace('/reset-password');
+                return;
+              } catch (err) {
+                console.error('Error processing reset link:', err);
               }
-            } catch (err) {
-              console.error('Error parsing deep link:', err);
             }
           }
           
+          // No tokens found
           setShowMenu(false);
           router.replace('/reset-password');
-          return;
         }
       };
-
+    
+      // Handle initial URL (app opened via link)
       Linking.getInitialURL().then((url) => {
         if (url) {
           handleDeepLink({ url });
         }
       });
-
+    
+      // Handle URLs while app is running
       linkingSubscription = Linking.addEventListener('url', handleDeepLink);
     }
 

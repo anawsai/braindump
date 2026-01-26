@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import React, { useState } from "react";
 import {
   View,
@@ -16,6 +17,7 @@ import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../context/ThemeContext";
 
+
 export default function ForgotPassword() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -24,37 +26,35 @@ export default function ForgotPassword() {
   const [emailSent, setEmailSent] = useState(false);
 
   async function handleResetPassword() {
-    if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Use deep link that will open the app on mobile
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'braindump://reset-password',
-      });
-
-      if (error) {
-        Alert.alert('Error', error.message);
-        return;
-      }
-
-      setEmailSent(true);
-    } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+  if (!email) {
+    Alert.alert('Error', 'Please enter your email address');
+    return;
   }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    Alert.alert('Error', 'Please enter a valid email address');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://anawsai.github.io/braindump-redirect/',
+    });
+
+    if (error) {
+      Alert.alert('Error', error.message);
+      return;
+    }
+
+    setEmailSent(true);
+  } catch (err: any) {
+    Alert.alert('Error', err?.message ?? 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+}
 
   if (emailSent) {
     return (

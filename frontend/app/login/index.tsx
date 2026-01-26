@@ -107,7 +107,7 @@ export default function Login() {
             <Text style={[styles.rememberText, { color: colors.text }]}>Remember me</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/forgot-password')}>
             <Text style={[styles.forgotText, { color: colors.text }]}>Forgot password?</Text>
           </TouchableOpacity>
         </View>
