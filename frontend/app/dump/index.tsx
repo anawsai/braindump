@@ -1,4 +1,3 @@
-// Dump page (rename it later)
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -10,9 +9,10 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { addNote } from "../../lib/api";
+import { addNote, fetchNotes } from "../../lib/api";
 import { useLoading } from '../../context/LoadingContext';
 import { useTheme } from '../../context/ThemeContext';
+import { checkForStressPatterns, getRecentDumpCount } from '../../lib/notifications';
 
 export default function Notes() {
   const { colors } = useTheme();
@@ -33,8 +33,13 @@ export default function Notes() {
     try {
       setSaving(true);
       loading.start('Saving...');
+      
       // Regular save - no AI organization
       await addNote('Untitled', noteText, undefined, false);
+      
+      // Check for stress patterns after saving
+      await checkStressAfterDump();
+      
       Alert.alert('Success', 'Note saved!');
       setNoteText('');
     } catch (e:any) {
@@ -53,8 +58,13 @@ export default function Notes() {
     try {
       setSaving(true);
       loading.start('Organizing...');
+      
       // Organize mode - AI generates title and category
       await addNote('Untitled', noteText, undefined, true);
+      
+      // Check for stress patterns after saving
+      await checkStressAfterDump();
+      
       Alert.alert('Success', 'Note organized and saved!');
       setNoteText('');
     } catch (e:any) {
@@ -62,6 +72,20 @@ export default function Notes() {
     } finally {
       setSaving(false);
       loading.stop();
+    }
+  }
+
+  async function checkStressAfterDump() {
+    try {
+      // Get all notes to check recent dump count
+      const allNotes = await fetchNotes();
+      const recentCount = await getRecentDumpCount(allNotes);
+      
+      // Check if stress alert should be sent
+      await checkForStressPatterns(recentCount);
+    } catch (error) {
+      console.error('Error checking stress patterns:', error);
+      // Don't show error to user, just log it
     }
   }
 

@@ -1,4 +1,3 @@
-// app/settings.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -7,21 +6,44 @@ import {
   Switch,
   TouchableOpacity,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  isWeeklyReviewEnabled,
+  areTaskRemindersEnabled,
+  areStressAlertsEnabled,
+  scheduleWeeklyReviewNotifications,
+  cancelWeeklyReviewNotifications,
+  scheduleTaskReminders,
+  cancelTaskReminders,
+  enableStressAlerts,
+  disableStressAlerts,
+  requestNotificationPermissions,
+} from "../../lib/notifications";
+import {
+  isBiometricAvailable,
+  isBiometricLockEnabled,
+  setBiometricLockEnabled,
+  getBiometricType,
+  authenticateWithBiometric,
+} from "../../lib/biometric";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { mode, colors, toggleTheme } = useTheme();
 
   // === UI toggles ===
-  const [keepPrivate, setKeepPrivate] = useState(true);
-  const [weeklyReview, setWeeklyReview] = useState(true);
-  const [taskReminders, setTaskReminders] = useState(true);
-  const [stressAlerts, setStressAlerts] = useState(true);
+  const [biometricLock, setBiometricLock] = useState(false);
+  const [biometricType, setBiometricType] = useState('Biometric');
+  const [weeklyReview, setWeeklyReview] = useState(false);
+  const [taskReminders, setTaskReminders] = useState(false);
+  const [stressAlerts, setStressAlerts] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // === Profile state (same idea as sidebar) ===
   const [profileName, setProfileName] = useState("");
@@ -60,16 +82,162 @@ export default function SettingsScreen() {
     setProfileInitials(initials);
   }
 
-  // Load current user when settings screen mounts
+  // Load all settings on mount
   useEffect(() => {
-    supabase.auth.getSession().then(({ data, error }) => {
+    loadAllSettings();
+  }, []);
+
+  async function loadAllSettings() {
+    try {
+      setLoading(true);
+
+      // Load user session
+      const { data, error } = await supabase.auth.getSession();
       if (error) {
         console.error("Error getting session in settings:", error.message);
-        return;
+      } else {
+        applySessionUser(data.session ?? null);
       }
-      applySessionUser(data.session ?? null);
-    });
-  }, []);
+
+      // Load notification preferences and biometric settings
+      const [weeklyEnabled, tasksEnabled, stressEnabled, biometricEnabled, bioType] = await Promise.all([
+        isWeeklyReviewEnabled(),
+        areTaskRemindersEnabled(),
+        areStressAlertsEnabled(),
+        isBiometricLockEnabled(),
+        getBiometricType(),
+      ]);
+
+      setWeeklyReview(weeklyEnabled);
+      setTaskReminders(tasksEnabled);
+      setStressAlerts(stressEnabled);
+      setBiometricLock(biometricEnabled);
+      setBiometricType(bioType);
+    } catch (error) {
+      console.error("Error loading settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // === Biometric Lock Handler ===
+
+  async function handleBiometricLockToggle(value: boolean) {
+    try {
+      if (value) {
+        // Check if biometric is available
+        const available = await isBiometricAvailable();
+        if (!available) {
+          Alert.alert(
+            'Not Available',
+            `${biometricType} is not set up on this device. Please enable it in your device settings first.`
+          );
+          return;
+        }
+
+        // Test authentication before enabling
+        const authenticated = await authenticateWithBiometric();
+        if (!authenticated) {
+          Alert.alert('Authentication Failed', 'Please try again.');
+          return;
+        }
+
+        await setBiometricLockEnabled(true);
+        setBiometricLock(true);
+        Alert.alert('Success', `${biometricType} lock enabled. The app will require authentication when opened.`);
+      } else {
+        // Require authentication to disable
+        const authenticated = await authenticateWithBiometric();
+        if (!authenticated) {
+          Alert.alert('Authentication Required', 'You must authenticate to disable biometric lock.');
+          return;
+        }
+
+        await setBiometricLockEnabled(false);
+        setBiometricLock(false);
+      }
+    } catch (error) {
+      console.error('Error toggling biometric lock:', error);
+      Alert.alert('Error', 'Failed to update biometric lock setting');
+    }
+  }
+
+  // === Notification Handlers ===
+
+  async function handleWeeklyReviewToggle(value: boolean) {
+    try {
+      if (value) {
+        const hasPermission = await requestNotificationPermissions();
+        if (!hasPermission) {
+          Alert.alert(
+            'Permission Required',
+            'Please enable notifications in your device settings to receive weekly review reminders.'
+          );
+          return;
+        }
+        await scheduleWeeklyReviewNotifications();
+        Alert.alert('Success', 'Weekly review reminders enabled. You will receive a notification every Sunday at 6 PM.');
+      } else {
+        await cancelWeeklyReviewNotifications();
+      }
+      setWeeklyReview(value);
+    } catch (error) {
+      console.error('Error toggling weekly review:', error);
+      Alert.alert('Error', 'Failed to update weekly review settings');
+    }
+  }
+
+  async function handleTaskRemindersToggle(value: boolean) {
+    try {
+      if (value) {
+        const hasPermission = await requestNotificationPermissions();
+        if (!hasPermission) {
+          Alert.alert(
+            'Permission Required',
+            'Please enable notifications in your device settings to receive task reminders.'
+          );
+          return;
+        }
+        await scheduleTaskReminders();
+        Alert.alert(
+          'Success',
+          'Task reminders enabled. You will receive notifications at 9 AM and 6 PM daily to check your tasks.'
+        );
+      } else {
+        await cancelTaskReminders();
+      }
+      setTaskReminders(value);
+    } catch (error) {
+      console.error('Error toggling task reminders:', error);
+      Alert.alert('Error', 'Failed to update task reminder settings');
+    }
+  }
+
+  async function handleStressAlertsToggle(value: boolean) {
+    try {
+      if (value) {
+        const hasPermission = await requestNotificationPermissions();
+        if (!hasPermission) {
+          Alert.alert(
+            'Permission Required',
+            'Please enable notifications in your device settings to receive stress alerts.'
+          );
+          return;
+        }
+        await enableStressAlerts();
+        Alert.alert(
+          'Stress Alerts Enabled',
+          'We will send you a gentle reminder to take a break if we detect stress patterns in your brain dumps.'
+        );
+      } else {
+        await disableStressAlerts();
+      }
+      setStressAlerts(value);
+    } catch (error) {
+      console.error('Error toggling stress alerts:', error);
+      Alert.alert('Error', 'Failed to update stress alert settings');
+    }
+  }
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -79,6 +247,19 @@ export default function SettingsScreen() {
     }
     router.replace("/login");
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Loading settings...
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView 
@@ -117,13 +298,14 @@ export default function SettingsScreen() {
       </TouchableOpacity>
 
       {/* Privacy / Appearance */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy/ Appearance</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy / Appearance</Text>
 
       <SettingRow
-        icon={<Ionicons name="shield-checkmark-outline" size={24} color={colors.icon} />}
-        label="Keep personal data private"
-        value={keepPrivate}
-        onValueChange={setKeepPrivate}
+        icon={<Ionicons name="finger-print" size={24} color={colors.icon} />}
+        label={`${biometricType} Lock`}
+        subtitle="Require authentication to open app"
+        value={biometricLock}
+        onValueChange={handleBiometricLockToggle}
       />
 
       <SettingRow
@@ -139,22 +321,25 @@ export default function SettingsScreen() {
       <SettingRow
         icon={<Ionicons name="calendar-outline" size={24} color={colors.icon} />}
         label="Weekly Review"
+        subtitle="Every Sunday at 6 PM"
         value={weeklyReview}
-        onValueChange={setWeeklyReview}
+        onValueChange={handleWeeklyReviewToggle}
       />
 
       <SettingRow
         icon={<Ionicons name="notifications-outline" size={24} color={colors.icon} />}
         label="Task Reminders"
+        subtitle="Daily at 9 AM and 6 PM"
         value={taskReminders}
-        onValueChange={setTaskReminders}
+        onValueChange={handleTaskRemindersToggle}
       />
 
       <SettingRow
         icon={<Ionicons name="sparkles-outline" size={24} color={colors.icon} />}
         label="Stress Alerts"
+        subtitle="Get notified to take breaks"
         value={stressAlerts}
-        onValueChange={setStressAlerts}
+        onValueChange={handleStressAlertsToggle}
       />
 
       {/* Sign Out */}
@@ -172,11 +357,13 @@ export default function SettingsScreen() {
 function SettingRow({
   icon,
   label,
+  subtitle,
   value,
   onValueChange,
 }: {
   icon: React.ReactNode;
   label: string;
+  subtitle?: string;
   value: boolean;
   onValueChange: (val: boolean) => void;
 }) {
@@ -186,7 +373,12 @@ function SettingRow({
     <View style={[styles.settingCard, { backgroundColor: colors.surface }]}>
       <View style={styles.settingLeft}>
         {icon}
-        <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
+        <View style={styles.settingTextContainer}>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
+          {subtitle && (
+            <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+          )}
+        </View>
       </View>
       <Switch
         value={value}
@@ -206,6 +398,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
   },
   headerRow: {
     flexDirection: "row",
@@ -262,9 +463,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    flex: 1,
+  },
+  settingTextContainer: {
+    flex: 1,
   },
   settingLabel: {
     fontSize: 15,
+  },
+  settingSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
   signOutButton: {
     flexDirection: "row",

@@ -3,10 +3,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { LoadingProvider, useLoading } from '../context/LoadingContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-import { View, Text, Pressable, Alert, StyleSheet, Image } from 'react-native';
+import { View, Text, Pressable, Alert, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { fetchNotes, getUserStats } from '../lib/api';
-import {Ionicons} from "@expo/vector-icons";
-
+import { Ionicons } from "@expo/vector-icons";
+import { initializeNotifications } from '../lib/notifications';
+import { isBiometricLockEnabled, authenticateWithBiometric } from '../lib/biometric';
 
 function Sidebar({
   collapsed,
@@ -42,32 +43,32 @@ function Sidebar({
 
       <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
 
-    <Pressable
-  style={styles.profileSection}
-  onPress={() => onNavigate('profile')}
->
-  <View style={styles.profileRow}>
-    <View style={[styles.profileCircle, { backgroundColor: colors.primaryDark }]}>
-      <Text style={styles.profileInitials}>{profileInitials}</Text>
-    </View>
-    <View style={styles.profileInfo}>
-      <Text style={[styles.profileName, { color: colors.text }]}>{profileName}</Text>
-      <Text style={[styles.profileEmail, { color: colors.text }]}>{profileEmail}</Text>
-    </View>
-  </View>
+      <Pressable
+        style={styles.profileSection}
+        onPress={() => onNavigate('profile')}
+      >
+        <View style={styles.profileRow}>
+          <View style={[styles.profileCircle, { backgroundColor: colors.primaryDark }]}>
+            <Text style={styles.profileInitials}>{profileInitials}</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={[styles.profileName, { color: colors.text }]}>{profileName}</Text>
+            <Text style={[styles.profileEmail, { color: colors.text }]}>{profileEmail}</Text>
+          </View>
+        </View>
 
-  <View style={styles.statsWrapper}>
-    <View style={styles.statItem}>
-      <Ionicons name="document-text" size={23} color={colors.icon} />
-      <Text style={[styles.statText, { color: colors.text }]}>{noteCount}</Text>
-    </View>
+        <View style={styles.statsWrapper}>
+          <View style={styles.statItem}>
+            <Ionicons name="document-text" size={23} color={colors.icon} />
+            <Text style={[styles.statText, { color: colors.text }]}>{noteCount}</Text>
+          </View>
 
-    <View style={styles.statItem}>
-      <Ionicons name="checkmark-circle" size={23} color={colors.icon} />
-      <Text style={[styles.statText, { color: colors.text }]}>{tasksCompleted}</Text>
-    </View>
-  </View>
-</Pressable>
+          <View style={styles.statItem}>
+            <Ionicons name="checkmark-circle" size={23} color={colors.icon} />
+            <Text style={[styles.statText, { color: colors.text }]}>{tasksCompleted}</Text>
+          </View>
+        </View>
+      </Pressable>
 
       <View style={styles.navSection}>
         <Pressable style={styles.navButton} onPress={() => onNavigate('/dump')}>
@@ -143,6 +144,8 @@ function LayoutContent() {
   const [profileEmail, setProfileEmail] = useState('');
   const [profileInitials, setProfileInitials] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [isLocked, setIsLocked] = useState(true);
+  const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
 
   function applySessionUser(session: any | null) {
     if (!session || !session.user) {
@@ -212,7 +215,37 @@ function LayoutContent() {
     }
   }
 
+  async function checkBiometricLock() {
+    try {
+      setIsCheckingBiometric(true);
+      const lockEnabled = await isBiometricLockEnabled();
+      
+      if (!lockEnabled) {
+        setIsLocked(false);
+        setIsCheckingBiometric(false);
+        return;
+      }
+
+      // Show lock screen and require authentication
+      const authenticated = await authenticateWithBiometric();
+      setIsLocked(!authenticated);
+      setIsCheckingBiometric(false);
+    } catch (error) {
+      console.error('Error checking biometric lock:', error);
+      setIsLocked(false);
+      setIsCheckingBiometric(false);
+    }
+  }
+
   useEffect(() => {
+    // Initialize notifications on app startup
+    initializeNotifications().catch(error => {
+      console.error('Failed to initialize notifications:', error);
+    });
+
+    // Check biometric lock first
+    checkBiometricLock();
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setShowMenu(true);
@@ -264,6 +297,35 @@ function LayoutContent() {
   async function handleNavigate(path: string) {
     router.push(path);
     setCollapsed(true);
+  }
+
+  // Show lock screen if locked
+  if (isLocked && !isCheckingBiometric) {
+    return (
+      <View style={[styles.lockScreen, { backgroundColor: colors.primary }]}>
+        <Image
+          source={require('../assets/mascot.png')}
+          style={styles.lockMascot}
+        />
+        <Text style={[styles.lockTitle, { color: colors.text }]}>
+          BrainDump is Locked
+        </Text>
+        <TouchableOpacity
+          style={[styles.unlockButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+          onPress={async () => {
+            const authenticated = await authenticateWithBiometric();
+            if (authenticated) {
+              setIsLocked(false);
+            }
+          }}
+        >
+          <Ionicons name="finger-print" size={24} color={colors.text} />
+          <Text style={[styles.unlockText, { color: colors.text }]}>
+            Unlock
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -348,10 +410,10 @@ const styles = StyleSheet.create({
   },
 
   profileSection: {
-  paddingVertical: 15,
-  paddingHorizontal: 15,
-  minHeight: 120,
-},
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    minHeight: 120,
+  },
 
   profileRow: {
     flexDirection: 'row',
@@ -525,5 +587,40 @@ const styles = StyleSheet.create({
 
   menuButton: {
     padding: 8,
+  },
+
+  lockScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+
+  lockMascot: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+    marginBottom: 24,
+  },
+
+  lockTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 40,
+  },
+
+  unlockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+
+  unlockText: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
