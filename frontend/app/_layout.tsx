@@ -219,8 +219,11 @@ function LayoutContent() {
   // Check if current page is the homepage (for styling)
   const isHomePage = pathname === '/home';
   
+  // Check if current page is delete-note page
+  const isDeleteNotePage = pathname.startsWith('/delete-note');
+  
   // Pages that need full-bleed styling (no padding/margins)
-  const isFullBleedPage = isHomePage || isAuthPage;
+  const isFullBleedPage = isHomePage || isAuthPage || isDeleteNotePage;
 
   function applySessionUser(session: any | null) {
     if (!session || !session.user) {
@@ -535,14 +538,15 @@ function LayoutContent() {
         {showMenu && !isAuthPage && !isHomePage && (
           <View style={[
             styles.headerRow, 
-            { borderBottomColor: colors.border }, 
+            { borderBottomColor: colors.border, backgroundColor: isDeleteNotePage ? colors.primary : 'transparent' }, 
             isMobile && styles.headerRowMobile,
+            isDeleteNotePage && styles.headerRowFullBleed,
           ]}>
             <Pressable
               onPress={() => setCollapsed((s) => !s)}
               style={styles.menuButton}
             >
-              <Text style={[{ fontSize: 30 }, { color: colors.text }]}>{'☰'}</Text>
+              <Text style={[{ fontSize: 30 }, { color: isDeleteNotePage ? '#1A1A1A' : colors.text }]}>{'☰'}</Text>
             </Pressable>
           </View>
         )}
@@ -891,6 +895,10 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    borderBottomWidth: 0,
+  },
+
+  headerRowFullBleed: {
     borderBottomWidth: 0,
   },
 

@@ -41,7 +41,7 @@ export default function DeleteNote() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
-      <StatusBar barStyle={colors.background === '#FFFFFF' ? "dark-content" : "light-content"} />
+      <StatusBar barStyle="dark-content" />
 
       {/* Warning icon */}
       <View style={styles.iconContainer}>
@@ -51,41 +51,41 @@ export default function DeleteNote() {
       </View>
 
       {/* Main message */}
-      <Text style={[styles.mainText, { color: colors.text }]}>
-        Are you sure you want to{'\n'}DELETE this NOTE ?
+      <Text style={[styles.mainText, { color: '#1A1A1A' }]}>
+        Are you sure you want to{'\n'}DELETE this NOTE?
       </Text>
 
       {/* Info box */}
-      <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.text }]}>
-        <Text style={[styles.infoText, { color: colors.text }]}>
+      <View style={[styles.infoBox, { backgroundColor: '#FFFFFF', borderColor: '#1A1A1A' }]}>
+        <Text style={[styles.infoText, { color: '#1A1A1A' }]}>
           All of your data in this note will be{'\n'}
           <Text style={styles.boldText}>permanently deleted.</Text>
         </Text>
       </View>
 
-      {/* Spacer */}
+      {/* Spacer to push buttons toward bottom */}
       <View style={{ flex: 1 }} />
 
       {/* Buttons */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
-          style={[styles.keepButton, { backgroundColor: colors.card, borderColor: colors.text }]}
+          style={[styles.keepButton, { backgroundColor: '#FFFFFF', borderColor: '#1A1A1A' }]}
           onPress={handleKeepIt}
           disabled={deleting}
         >
-          <Text style={[styles.keepButtonText, { color: colors.text }]}>Keep it!</Text>
+          <Text style={[styles.keepButtonText, { color: '#1A1A1A' }]}>Keep it!</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.deleteButton, 
-            { backgroundColor: colors.error, borderColor: colors.text },
+            { backgroundColor: '#FF4444', borderColor: '#1A1A1A' },
             deleting && styles.deleteButtonDisabled
           ]}
           onPress={handleDelete}
           disabled={deleting}
         >
-          <Text style={[styles.deleteButtonText, { color: colors.text }]}>
+          <Text style={[styles.deleteButtonText, { color: '#FFFFFF' }]}>
             {deleting ? "Deleting..." : "Delete"}
           </Text>
         </TouchableOpacity>
@@ -97,43 +97,43 @@ export default function DeleteNote() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingVertical: 16,
     alignItems: 'center',
   },
   iconContainer: {
-    marginTop: 120,
-    marginBottom: 40,
+    marginTop: 100,
+    marginBottom: 24,
   },
   iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconText: {
-    fontSize: 72,
+    fontSize: 48,
     fontWeight: 'bold',
   },
   mainText: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 36,
+    marginBottom: 24,
+    lineHeight: 28,
   },
   infoBox: {
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     width: '100%',
   },
   infoText: {
-    fontSize: 18,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 22,
   },
   boldText: {
     fontWeight: '700',
@@ -141,32 +141,32 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 16,
-    marginBottom: 40,
+    gap: 12,
+    marginBottom: 60,
   },
   keepButton: {
     flex: 1,
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingVertical: 18,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   keepButtonText: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '700',
   },
   deleteButton: {
     flex: 1,
-    borderRadius: 12,
-    borderWidth: 2,
-    paddingVertical: 18,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   deleteButtonDisabled: {
     opacity: 0.6,
   },
   deleteButtonText: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '700',
   },
 });
