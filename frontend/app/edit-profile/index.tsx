@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Platform,
+  ActionSheetIOS,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -94,7 +96,66 @@ export default function EditProfile() {
     updateInitials(firstName, lastName);
   }, [firstName, lastName]);
 
-  async function pickImage() {
+  // Show options to take photo or choose from library
+  function showImageOptions() {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Library'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            takePhoto();
+          } else if (buttonIndex === 2) {
+            pickImageFromLibrary();
+          }
+        }
+      );
+    } else {
+      // Android: use Alert with buttons
+      Alert.alert(
+        'Change Profile Photo',
+        'Choose an option',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Take Photo', onPress: takePhoto },
+          { text: 'Choose from Library', onPress: pickImageFromLibrary },
+        ]
+      );
+    }
+  }
+
+  async function takePhoto() {
+    try {
+      // Request camera permission
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please allow access to your camera to take a profile picture."
+        );
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setPendingImageUri(result.assets[0].uri);
+      }
+    } catch (err: any) {
+      console.error("Error taking photo:", err);
+      Alert.alert("Error", "Failed to take photo");
+    }
+  }
+
+  async function pickImageFromLibrary() {
     try {
       // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -116,7 +177,6 @@ export default function EditProfile() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        // Just set the local preview, don't upload yet
         setPendingImageUri(result.assets[0].uri);
       }
     } catch (err: any) {
@@ -257,19 +317,7 @@ export default function EditProfile() {
   };
 
   const handleCancel = () => {
-    // If there are unsaved changes, ask for confirmation
-    if (hasUnsavedImage) {
-      Alert.alert(
-        "Discard Changes?",
-        "You have an unsaved profile picture. Are you sure you want to go back?",
-        [
-          { text: "Stay", style: "cancel" },
-          { text: "Discard", style: "destructive", onPress: () => router.back() },
-        ]
-      );
-    } else {
-      router.back();
-    }
+    router.back();
   };
 
   if (loading) {
@@ -301,7 +349,7 @@ export default function EditProfile() {
 
       {/* Profile Picture */}
       <View style={styles.profileSection}>
-        <TouchableOpacity onPress={pickImage} disabled={saving}>
+        <TouchableOpacity onPress={showImageOptions} disabled={saving}>
           <View style={[styles.profileCircle, { backgroundColor: colors.primary, borderColor: colors.border }]}>
             {displayedImage ? (
               <Image source={{ uri: displayedImage }} style={styles.profileImage} />
@@ -315,7 +363,7 @@ export default function EditProfile() {
           </View>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={pickImage} disabled={saving}>
+        <TouchableOpacity onPress={showImageOptions} disabled={saving}>
           <Text style={[styles.changePhoto, { color: colors.primary }]}>
             Change Photo
           </Text>
