@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { fetchNotes, getUserStats } from '../lib/api';
 import { Ionicons } from "@expo/vector-icons";
-import { initializeNotifications } from '../lib/notifications';
+import { initializeNotifications, isWeeklyReviewEnabled, areTaskRemindersEnabled, areStressAlertsEnabled } from '../lib/notifications';
 import { isBiometricLockEnabled, authenticateWithBiometric } from '../lib/biometric';
 import { preloadMascotImages } from '../lib/preloadAssets';
 
@@ -36,6 +36,7 @@ function Sidebar({
   onClose,
   noteCount,
   tasksCompleted,
+  notificationsEnabled,
   profileName,
   profileEmail,
   profileInitials,
@@ -48,6 +49,7 @@ function Sidebar({
   onClose: () => void;
   noteCount: number;
   tasksCompleted: number;
+  notificationsEnabled: number;
   profileName: string;
   profileEmail: string;
   profileInitials: string;
@@ -111,6 +113,19 @@ function Sidebar({
           <View style={styles.statItem}>
             <Ionicons name="checkmark-circle" size={isMobile ? 20 : 23} color={colors.icon} />
             <Text style={[styles.statText, { color: colors.text }]}>{tasksCompleted}</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <Ionicons 
+              name={notificationsEnabled > 0 ? "notifications" : "notifications-off"} 
+              size={isMobile ? 20 : 23} 
+              color={notificationsEnabled > 0 ? colors.icon : colors.textSecondary} 
+            />
+            {notificationsEnabled > 0 && (
+              <View style={[styles.notificationBadge, { backgroundColor: colors.success || '#22c55e' }]}>
+                <Text style={styles.notificationBadgeText}>{notificationsEnabled}</Text>
+              </View>
+            )}
           </View>
         </View>
       </Pressable>
@@ -206,6 +221,7 @@ function LayoutContent() {
   const [showMenu, setShowMenu] = useState(false);
   const [noteCount, setNoteCount] = useState(0);
   const [tasksCompleted, setTasksCompleted] = useState(0);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(0);
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profileInitials, setProfileInitials] = useState('');
@@ -300,6 +316,21 @@ function LayoutContent() {
     }
   }
 
+  async function loadNotificationStatus() {
+    try {
+      const [weekly, tasks, stress] = await Promise.all([
+        isWeeklyReviewEnabled(),
+        areTaskRemindersEnabled(),
+        areStressAlertsEnabled(),
+      ]);
+      const count = (weekly ? 1 : 0) + (tasks ? 1 : 0) + (stress ? 1 : 0);
+      setNotificationsEnabled(count);
+    } catch (error: any) {
+      console.error('Error loading notification status:', error?.message ?? error);
+      setNotificationsEnabled(0);
+    }
+  }
+
   async function checkBiometricLock() {
     try {
       setIsCheckingBiometric(true);
@@ -321,6 +352,13 @@ function LayoutContent() {
       setIsCheckingBiometric(false);
     }
   }
+
+  // Refresh notification status when navigating (e.g., after changing settings)
+  useEffect(() => {
+    if (showMenu && !isAuthPage) {
+      loadNotificationStatus();
+    }
+  }, [pathname, showMenu, isAuthPage]);
 
   useEffect(() => {
     // Preload mascot images first thing
@@ -425,11 +463,13 @@ function LayoutContent() {
         if (session.user?.id) {
           await loadUserStats(session.user.id);
         }
+        await loadNotificationStatus();
       } else {
         setShowMenu(false);
         router.replace('/login');
         setNoteCount(0);
         setTasksCompleted(0);
+        setNotificationsEnabled(0);
       }
     });
 
@@ -476,6 +516,7 @@ function LayoutContent() {
           if (session.user?.id) {
             await loadUserStats(session.user.id);
           }
+          await loadNotificationStatus();
         } else if (event === 'SIGNED_OUT' || !session) {
           // Clear recovery mode on sign out
           isInRecoveryMode.current = false;
@@ -484,6 +525,7 @@ function LayoutContent() {
           router.replace('/login');
           setNoteCount(0);
           setTasksCompleted(0);
+          setNotificationsEnabled(0);
         }
       }
     );
@@ -504,6 +546,7 @@ function LayoutContent() {
     router.replace('/login');
     setNoteCount(0);
     setTasksCompleted(0);
+    setNotificationsEnabled(0);
   }
 
   function handleNavigate(path: string) {
@@ -561,6 +604,7 @@ function LayoutContent() {
           onClose={handleCloseSidebar}
           noteCount={noteCount}
           tasksCompleted={tasksCompleted}
+          notificationsEnabled={notificationsEnabled}
           profileName={profileName}
           profileEmail={profileEmail}
           profileInitials={profileInitials}
@@ -803,6 +847,21 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 15,
     fontWeight: "600",
+  },
+
+  notificationBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   navSection: {

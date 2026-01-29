@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../../lib/supabase";
 import React from "react";
-import { fetchNotes, getUserStats, getUserActivity, getUserAchievements } from "../../lib/api";
+import { fetchNotes, getUserStats, getUserActivity } from "../../lib/api";
 import { useTheme } from "../../context/ThemeContext";
 import { useLoading } from "../../context/LoadingContext";
 
@@ -27,6 +27,32 @@ type Achievement = {
   icon: string;
   unlocked: boolean;
 };
+
+// Compute achievements based on actual user stats
+function computeAchievements(stats: UserStats, noteCount: number): Achievement[] {
+  const totalDumps = stats.total_dumps || noteCount;
+  
+  return [
+    {
+      type: "first_dump",
+      name: "First Dump",
+      icon: "download",
+      unlocked: totalDumps >= 1,
+    },
+    {
+      type: "week_streak",
+      name: "Week Straight",
+      icon: "flame",
+      unlocked: stats.current_streak >= 7 || stats.longest_streak >= 7,
+    },
+    {
+      type: "task_complete",
+      name: "Task Complete",
+      icon: "checkmark",
+      unlocked: stats.tasks_completed >= 1,
+    },
+  ];
+}
 
 export default function Profile() {
   const router = useRouter();
@@ -90,19 +116,21 @@ export default function Profile() {
     }
   }
 
-  async function loadUserData(uid: string) {
+  async function loadUserData(uid: string, currentNoteCount: number) {
     try {
-      const [stats, activity, achievementsData] = await Promise.all([
+      const [stats, activity] = await Promise.all([
         getUserStats(uid),
         getUserActivity(uid),
-        getUserAchievements(uid),
       ]);
 
       setUserStats(stats);
       setWeeklyActivity(activity);
-      setAchievements(achievementsData);
+      
+      // Always compute achievements locally from actual stats
+      setAchievements(computeAchievements(stats, currentNoteCount));
     } catch (err) {
       console.error("Failed to load user data:", err);
+      setAchievements(computeAchievements(userStats, currentNoteCount));
     }
   }
 
@@ -119,12 +147,13 @@ export default function Profile() {
           const { data: { user } } = await supabase.auth.getUser();
           applySessionUser(user);
           
-          if (user?.id) {
-            await loadUserData(user.id);
-          }
-          
           const notes = await fetchNotes();
-          setNoteCount(notes.length);
+          const currentNoteCount = notes.length;
+          setNoteCount(currentNoteCount);
+          
+          if (user?.id) {
+            await loadUserData(user.id, currentNoteCount);
+          }
           
           setHasLoadedOnce(true);
         } catch (err) {
@@ -178,11 +207,13 @@ export default function Profile() {
           <View style={[styles.statCard, { backgroundColor: colors.primaryDark }]}>
             <Ionicons name="trash" size={50} color={colors.icon} />
             <Text style={[styles.statNumber, { color: colors.text }]}>{userStats.total_dumps || noteCount}</Text>
+            <Text style={[styles.statLabel, { color: colors.text }]}>Brain Dumps</Text>
           </View>
 
           <View style={[styles.statCard, { backgroundColor: colors.primaryDark }]}>
             <Ionicons name="checkmark-circle" size={50} color={colors.icon} />
             <Text style={[styles.statNumber, { color: colors.text }]}>{userStats.tasks_completed}</Text>
+            <Text style={[styles.statLabel, { color: colors.text }]}>Tasks Done</Text>
           </View>
         </View>
       </View>
@@ -237,6 +268,11 @@ export default function Profile() {
                   !achievement.unlocked && styles.achievementLocked,
                 ]}
               >
+                {achievement.unlocked && (
+                  <View style={[styles.unlockedBadge, { backgroundColor: colors.success || '#22c55e' }]}>
+                    <Ionicons name="checkmark" size={12} color="#fff" />
+                  </View>
+                )}
                 <Ionicons
                   name={achievement.icon as any}
                   size={35}
@@ -253,20 +289,36 @@ export default function Profile() {
               </View>
             ))
           ) : (
-            <>
-              <View style={[styles.achievementCard, styles.achievementLocked, { backgroundColor: colors.surface }]}>
-                <Ionicons name="download" size={35} color={colors.textSecondary} />
-                <Text style={[styles.achievementText, { color: colors.textSecondary }]}>First Dump</Text>
+            // Fallback: compute achievements directly if state is empty
+            computeAchievements(userStats, noteCount).map((achievement, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.achievementCard,
+                  { backgroundColor: achievement.unlocked ? colors.primaryDark : colors.surface },
+                  !achievement.unlocked && styles.achievementLocked,
+                ]}
+              >
+                {achievement.unlocked && (
+                  <View style={[styles.unlockedBadge, { backgroundColor: colors.success || '#22c55e' }]}>
+                    <Ionicons name="checkmark" size={12} color="#fff" />
+                  </View>
+                )}
+                <Ionicons
+                  name={achievement.icon as any}
+                  size={35}
+                  color={achievement.unlocked ? colors.icon : colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.achievementText,
+                    { color: achievement.unlocked ? colors.text : colors.textSecondary },
+                  ]}
+                >
+                  {achievement.name}
+                </Text>
               </View>
-              <View style={[styles.achievementCard, styles.achievementLocked, { backgroundColor: colors.surface }]}>
-                <Ionicons name="flame" size={35} color={colors.textSecondary} />
-                <Text style={[styles.achievementText, { color: colors.textSecondary }]}>Week Straight</Text>
-              </View>
-              <View style={[styles.achievementCard, styles.achievementLocked, { backgroundColor: colors.surface }]}>
-                <Ionicons name="checkmark" size={35} color={colors.textSecondary} />
-                <Text style={[styles.achievementText, { color: colors.textSecondary }]}>Task Complete</Text>
-              </View>
-            </>
+            ))
           )}
         </View>
       </View>
@@ -354,18 +406,23 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: 150,
-    height: 120,
+    height: 140,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 16,
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 4,
     marginTop: 10,
   },
   statNumber: {
     fontSize: 20,
     fontWeight: "600",
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    opacity: 0.9,
   },
 
   streakSection: {
@@ -431,6 +488,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     paddingHorizontal: 10,
+    position: "relative",
   },
   achievementLocked: {
     opacity: 0.7,
@@ -444,5 +502,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     fontSize: 14,
     textAlign: "right",
+  },
+  unlockedBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
