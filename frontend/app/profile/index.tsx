@@ -7,6 +7,7 @@ import { supabase } from "../../lib/supabase";
 import React from "react";
 import { fetchNotes, getUserStats, getUserActivity, getUserAchievements } from "../../lib/api";
 import { useTheme } from "../../context/ThemeContext";
+import { useLoading } from "../../context/LoadingContext";
 
 type UserStats = {
   current_streak: number;
@@ -30,6 +31,7 @@ type Achievement = {
 export default function Profile() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { start, stop } = useLoading();
 
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
@@ -37,6 +39,7 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [noteCount, setNoteCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const [userStats, setUserStats] = useState<UserStats>({
     current_streak: 0,
@@ -107,19 +110,34 @@ export default function Profile() {
   useFocusEffect(
     useCallback(() => {
       async function loadProfile() {
-        const { data: { user } } = await supabase.auth.getUser();
-        applySessionUser(user);
-        if (user?.id) {
-          loadUserData(user.id);
+        // Only show loading animation on first load
+        if (!hasLoadedOnce) {
+          start('Loading profile...');
+        }
+        
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          applySessionUser(user);
+          
+          if (user?.id) {
+            await loadUserData(user.id);
+          }
+          
+          const notes = await fetchNotes();
+          setNoteCount(notes.length);
+          
+          setHasLoadedOnce(true);
+        } catch (err) {
+          console.error("Failed to load profile:", err);
+        } finally {
+          if (!hasLoadedOnce) {
+            stop();
+          }
         }
       }
       
       loadProfile();
-      
-      fetchNotes()
-        .then((notes) => setNoteCount(notes.length))
-        .catch((err) => console.error("Failed to fetch notes:", err));
-    }, [])
+    }, [hasLoadedOnce])
   );
 
   return (

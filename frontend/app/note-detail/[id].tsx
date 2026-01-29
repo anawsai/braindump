@@ -170,10 +170,8 @@ export default function NoteDetail() {
             try {
               if (note.is_completed) {
                 await uncompleteTask(String(id));
-                Alert.alert("Success", "Task marked as incomplete");
               } else {
                 await completeTask(String(id));
-                Alert.alert("Success", "Task completed!");
               }
               const updatedNote = await fetchNoteById(String(id));
               setNote(updatedNote);

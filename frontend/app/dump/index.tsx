@@ -49,7 +49,6 @@ export default function Notes() {
       // Check for stress patterns after saving
       await checkStressAfterDump();
       
-      Alert.alert('Success', 'Note saved!');
       setNoteText('');
       dismissKeyboard();
     } catch (e:any) {
@@ -75,7 +74,6 @@ export default function Notes() {
       // Check for stress patterns after saving
       await checkStressAfterDump();
       
-      Alert.alert('Success', 'Note organized and saved!');
       setNoteText('');
       dismissKeyboard();
     } catch (e:any) {

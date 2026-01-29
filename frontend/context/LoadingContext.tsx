@@ -1,5 +1,5 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react';
+import { View, StyleSheet, Animated, Easing } from 'react-native';
 import { useTheme } from './ThemeContext';
 
 type LoadingContextType = {
@@ -21,17 +21,37 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState(false);
   const [message, setMessage] = useState<string | undefined>();
   const startAt = useRef<number | null>(null);
+  const safetyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const start = useCallback((msg?: string) => {
+    // Clear any existing safety timeout
+    if (safetyTimeout.current) {
+      clearTimeout(safetyTimeout.current);
+    }
+    
     startAt.current = Date.now();
     setActive(true);
     setMessage(msg);
+    
+    // Safety timeout - auto-stop after 10 seconds no matter what
+    safetyTimeout.current = setTimeout(() => {
+      console.warn('Loading safety timeout triggered - auto-stopping');
+      setActive(false);
+      setMessage(undefined);
+      startAt.current = null;
+    }, 10000);
   }, []);
 
   const stop = useCallback(() => {
-    const start = startAt.current ?? Date.now();
-    const elapsed = Date.now() - start;
-    // Keep 2 second minimum for your loading animation
+    // Clear safety timeout
+    if (safetyTimeout.current) {
+      clearTimeout(safetyTimeout.current);
+      safetyTimeout.current = null;
+    }
+    
+    const startTime = startAt.current ?? Date.now();
+    const elapsed = Date.now() - startTime;
+    // Keep 2 second minimum for your loading animation to be visible
     const wait = Math.max(0, 2000 - elapsed);
     setTimeout(() => {
       setActive(false);
@@ -43,19 +63,47 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   return (
     <LoadingContext.Provider value={{ active, message, start, stop }}>
       {children}
-      {active && <LoadingOverlay message={message} />}
+      {active && <LoadingOverlay />}
     </LoadingContext.Provider>
   );
 }
 
 // Separate component so it can use theme
-function LoadingOverlay({ message }: { message?: string }) {
+function LoadingOverlay() {
   const { colors } = useTheme();
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const directionRef = useRef(Math.random() > 0.5 ? 1 : -1);
+  
+  useEffect(() => {
+    // Create continuous rotation animation with random direction
+    const spinAnimation = Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: directionRef.current,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    spinAnimation.start();
+    
+    return () => spinAnimation.stop();
+  }, [spinValue]);
+  
+  const spin = spinValue.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: ['-360deg', '0deg', '360deg'],
+  });
   
   return (
     <View style={[styles.loadingOverlay, { backgroundColor: colors.primary }]} pointerEvents="auto">
-      <ActivityIndicator size="large" color={colors.text} />
-      <Text style={[styles.loadingText, { color: colors.text }]}>{message ?? 'Loading...'}</Text>
+      <Animated.Image
+        source={require('../assets/loading_logo.jpg')}
+        style={[
+          styles.loadingImage,
+          { transform: [{ rotate: spin }] }
+        ]}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -71,11 +119,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    fontWeight: '600'
-  }
+  loadingImage: {
+    width: 500,
+    height: 500,
+  },
 });
 
 export default LoadingContext;

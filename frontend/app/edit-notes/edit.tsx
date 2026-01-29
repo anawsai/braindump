@@ -77,10 +77,8 @@ export default function EditNote() {
           category: category,
           organize: false
         });
-        Alert.alert("Success", "Note updated!");
       } else {
         await addNote(title.trim() || "Untitled", content.trim(), category, false);
-        Alert.alert("Success", "Note created!");
       }
       
       setTitle("");
@@ -109,10 +107,8 @@ export default function EditNote() {
           content: content.trim(),
           organize: true
         });
-        Alert.alert("Success", "Note reorganized!");
       } else {
         await addNote(title.trim() || "Untitled", content.trim(), undefined, true);
-        Alert.alert("Success", "Note organized and created!");
       }
       
       setTitle("");

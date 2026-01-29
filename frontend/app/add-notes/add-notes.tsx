@@ -45,7 +45,6 @@ export default function AddNote() {
       setSavingMode('save');
       dismissKeyboard();
       await addNote(title.trim() || "Untitled", content.trim(), category, false);
-      Alert.alert("Success", "Note saved!");
       router.back();
     } catch (e: any) {
       Alert.alert("Error", e.message || "Failed to save note");
@@ -64,7 +63,6 @@ export default function AddNote() {
       setSavingMode('organize');
       dismissKeyboard();
       await addNote(title.trim() || "Untitled", content.trim(), undefined, true);
-      Alert.alert("Success", "Note organized and saved!");
       router.back();
     } catch (e: any) {
       Alert.alert("Error", e.message || "Failed to organize note");

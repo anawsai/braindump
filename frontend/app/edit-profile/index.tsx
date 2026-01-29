@@ -247,7 +247,6 @@ export default function EditProfile() {
         setSavedAvatarUrl(updateData.avatar_url);
       }
 
-      Alert.alert("Success", "Profile updated successfully!");
       router.back();
     } catch (err: any) {
       console.error("Error saving profile:", err);

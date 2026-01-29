@@ -30,7 +30,6 @@ export default function DeleteNote() {
     setDeleting(true);
     try {
       await deleteNote(String(id));
-      Alert.alert("Success", "Note deleted successfully!");
       router.replace('/notes');
     } catch (err: any) {
       Alert.alert("Error deleting note", err?.message ?? String(err));
