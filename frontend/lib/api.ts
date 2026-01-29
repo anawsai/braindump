@@ -1,26 +1,20 @@
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import { supabase } from "./supabase";
 
 // API URL Configuration
-// Option 1: Set EXPO_PUBLIC_API_URL in your .env file
-// Option 2: Deploy backend and put the URL here
-// Option 3: For local dev, use your computer's IP (only works on same WiFi)
+// Set EXPO_PUBLIC_API_URL in your .env file
+// Example: EXPO_PUBLIC_API_URL=https://abc123.ngrok.io
 
 const getApiUrl = () => {
-  // First, check for environment variable (works for all team members)
-  const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl) {
-    return envUrl;
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  
+  if (!envUrl) {
+    console.warn('EXPO_PUBLIC_API_URL not set in .env file!');
+    console.warn('Create a .env file in /frontend with:');
+    console.warn('EXPO_PUBLIC_API_URL=https://your-ngrok-url.ngrok.io');
   }
   
-  if (__DEV__) {
-    // Use local IP for mobile testing (must be on same WiFi)
-    return 'http://10.20.0.15:5001';
-  }
-  
-  // Production URL - replace with your deployed backend
-  return 'https://your-production-api.com';
+  console.log(' Using API URL:', envUrl || 'NOT SET');
+  return envUrl || '';
 };
 
 const API = getApiUrl();
