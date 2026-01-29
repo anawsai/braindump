@@ -20,6 +20,7 @@ import { fetchNotes, getUserStats } from '../lib/api';
 import { Ionicons } from "@expo/vector-icons";
 import { initializeNotifications } from '../lib/notifications';
 import { isBiometricLockEnabled, authenticateWithBiometric } from '../lib/biometric';
+import { preloadMascotImages } from '../lib/preloadAssets';
 
 // Pages that should not show navigation (auth pages)
 const AUTH_PAGES = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -212,6 +213,7 @@ function LayoutContent() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(true);
   const [isCheckingBiometric, setIsCheckingBiometric] = useState(true);
+  const [assetsReady, setAssetsReady] = useState(false);
   
   // Track if we're in password recovery mode to prevent redirect to home
   const isInRecoveryMode = useRef(false);
@@ -321,6 +323,11 @@ function LayoutContent() {
   }
 
   useEffect(() => {
+    // Preload mascot images first thing
+    preloadMascotImages().then(() => {
+      setAssetsReady(true);
+    });
+
     // Initialize notifications on app startup
     initializeNotifications().catch(error => {
       console.error('Failed to initialize notifications:', error);
